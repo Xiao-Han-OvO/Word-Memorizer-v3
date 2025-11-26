@@ -1,3 +1,0 @@
-/workspaces/Word-Memorizer-v3/backend/build/CMakeFiles/vocabmemster.dir
-/workspaces/Word-Memorizer-v3/backend/build/CMakeFiles/edit_cache.dir
-/workspaces/Word-Memorizer-v3/backend/build/CMakeFiles/rebuild_cache.dir
