@@ -1,0 +1,4 @@
+resolve-merge.sh
+style.css
+frontend/dist/
+backend/build/
