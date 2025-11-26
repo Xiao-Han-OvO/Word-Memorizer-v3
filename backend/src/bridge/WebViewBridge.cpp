@@ -75,13 +75,24 @@ void WebViewBridge::loadFrontend() {
     candidates.push_back(cwd + "/frontend/dist");
 
     std::string foundDir;
+    std::string fallbackDir;
     for (const auto& p : candidates) {
         std::string indexPath = p + "/index.html";
+        std::string assetsPath = p + "/assets";
         if (std::filesystem::exists(indexPath)) {
-            foundDir = p;
-            std::cout << "找到前端目录: " << foundDir << std::endl;
-            break;
+            // 优先选择同时存在 assets 目录的前端目录
+            if (std::filesystem::exists(assetsPath) && std::filesystem::is_directory(assetsPath)) {
+                foundDir = p;
+                std::cout << "找到前端目录(含 assets): " << foundDir << std::endl;
+                break;
+            }
+            // 记录一个 fallback，如果没有包含 assets 的目录，再使用它
+            if (fallbackDir.empty()) fallbackDir = p;
         }
+    }
+    if (foundDir.empty() && !fallbackDir.empty()) {
+        foundDir = fallbackDir;
+        std::cout << "找到前端目录（fallback，assets 缺失）: " << foundDir << std::endl;
     }
 
     if (foundDir.empty()) {
