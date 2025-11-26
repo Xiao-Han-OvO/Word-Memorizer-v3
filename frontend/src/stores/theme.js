@@ -52,6 +52,12 @@ export const useThemeStore = defineStore('theme', () => {
 		saveToBackend()
 	}
 
+	const setDarkMode = (val) => {
+		isDarkMode.value = !!val
+		updateCssVariables()
+		saveToBackend()
+	}
+
 	const setTheme = (themeName) => {
 		if (ThemeConfig.colorThemes[themeName]) {
 			currentTheme.value = themeName
@@ -141,6 +147,7 @@ export const useThemeStore = defineStore('theme', () => {
 		toggleDarkMode,
 		setTheme,
 		setCustomColor,
+		setDarkMode,
 		
 		// 方法
 		updateCssVariables,

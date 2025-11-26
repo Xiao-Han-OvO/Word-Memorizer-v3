@@ -66,6 +66,10 @@ export const useWordStore = defineStore('word', () => {
 		bridge.send(Constants.MESSAGE_TYPES.LOAD_WORDS_FILE, { filename })
 	}
 
+	const loadWordsFileContent = async (content, filename) => {
+		bridge.send(Constants.MESSAGE_TYPES.LOAD_WORDS_CONTENT, { filename, content })
+	}
+
 	const resetProgress = () => {
 		bridge.send(Constants.MESSAGE_TYPES.RESET_PROGRESS, {})
 	}
@@ -151,6 +155,7 @@ export const useWordStore = defineStore('word', () => {
 		submitAnswer,
 		showAnswer,
 		loadWordsFile,
+		loadWordsFileContent,
 		resetProgress,
 		getAllWords,
 		

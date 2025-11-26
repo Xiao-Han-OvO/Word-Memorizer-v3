@@ -1960,6 +1960,7 @@ CMakeFiles/vocabmemster.dir/src/bridge/WebViewBridge.cpp.o: /workspaces/Word-Mem
   /usr/include/c++/13/bits/std_abs.h \
   /usr/include/c++/13/bits/std_function.h \
   /usr/include/c++/13/bits/std_mutex.h \
+  /usr/include/c++/13/bits/std_thread.h \
   /usr/include/c++/13/bits/stl_algo.h \
   /usr/include/c++/13/bits/stl_algobase.h \
   /usr/include/c++/13/bits/stl_bvector.h \
@@ -1989,6 +1990,7 @@ CMakeFiles/vocabmemster.dir/src/bridge/WebViewBridge.cpp.o: /workspaces/Word-Mem
   /usr/include/c++/13/bits/streambuf_iterator.h \
   /usr/include/c++/13/bits/string_view.tcc \
   /usr/include/c++/13/bits/stringfwd.h \
+  /usr/include/c++/13/bits/this_thread_sleep.h \
   /usr/include/c++/13/bits/uniform_int_dist.h \
   /usr/include/c++/13/bits/unique_lock.h \
   /usr/include/c++/13/bits/unique_ptr.h \
@@ -2005,6 +2007,7 @@ CMakeFiles/vocabmemster.dir/src/bridge/WebViewBridge.cpp.o: /workspaces/Word-Mem
   /usr/include/c++/13/cassert \
   /usr/include/c++/13/cctype \
   /usr/include/c++/13/cerrno \
+  /usr/include/c++/13/chrono \
   /usr/include/c++/13/clocale \
   /usr/include/c++/13/cmath \
   /usr/include/c++/13/codecvt \
@@ -2064,6 +2067,7 @@ CMakeFiles/vocabmemster.dir/src/bridge/WebViewBridge.cpp.o: /workspaces/Word-Mem
   /usr/include/c++/13/string \
   /usr/include/c++/13/string_view \
   /usr/include/c++/13/system_error \
+  /usr/include/c++/13/thread \
   /usr/include/c++/13/tr1/bessel_function.tcc \
   /usr/include/c++/13/tr1/beta_function.tcc \
   /usr/include/c++/13/tr1/ell_integral.tcc \
@@ -8398,6 +8402,12 @@ CMakeFiles/vocabmemster.dir/src/ui/MainWindow.cpp.o: /workspaces/Word-Memorizer-
 
 /workspaces/Word-Memorizer-v3/backend/src/core/SettingsManager.cpp:
 
+/usr/include/c++/13/thread:
+
+/usr/include/c++/13/chrono:
+
+/usr/include/c++/13/bits/this_thread_sleep.h:
+
 /workspaces/Word-Memorizer-v3/backend/src/bridge/WebViewBridge.cpp:
 
 /workspaces/Word-Memorizer-v3/backend/src/core/WordManager.h:
@@ -10749,6 +10759,8 @@ CMakeFiles/vocabmemster.dir/src/ui/MainWindow.cpp.o: /workspaces/Word-Memorizer-
 /usr/include/gtk-3.0/gtk/gtkcheckbutton.h:
 
 /usr/include/gtk-3.0/gdk/gdkpixbuf.h:
+
+/usr/include/c++/13/bits/std_thread.h:
 
 /usr/include/giomm-2.4/giomm/dbusobject.h:
 

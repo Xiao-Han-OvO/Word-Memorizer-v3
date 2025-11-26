@@ -8,6 +8,9 @@
 #include <thread>
 #include <chrono>
 #include <cstdlib>
+#include <nlohmann/json.hpp>
+#include <ctime>
+#include <cstdio>
 
 WebViewBridge::WebViewBridge(WordManager& wm, SettingsManager& sm, Gtk::Window& window)
     : wordManager(wm), settingsManager(sm), mainWindow(window), webView(nullptr) {
@@ -133,50 +136,78 @@ void WebViewBridge::handleFrontendMessage(const std::string& message) {
     std::cout << "收到前端消息: " << message << std::endl;
 
     try {
-        // 解析消息
-        // 消息格式: {"method": "methodName", "data": "data"}
-        // 这里使用简单的字符串解析，实际可以使用更复杂的JSON解析
+        // 解析为 JSON
+        auto j = nlohmann::json::parse(message);
+        if (!j.contains("method")) {
+            std::cerr << "无效消息（缺少 method字段）" << std::endl;
+            return;
+        }
 
-        if (message.find("\"method\":\"getRandomWord\"") != std::string::npos) {
+        std::string method = j["method"].get<std::string>();
+
+        if (method == "console") {
+            // console 转发：打印详细信息
+            try {
+                auto data = j["data"];
+                std::string level = data.value("level", "log");
+                auto args = data.value("args", nlohmann::json::array());
+                std::cout << "[前端 console][" << level << "] ";
+                for (const auto& a : args) std::cout << a.get<std::string>() << " ";
+                std::cout << std::endl;
+            } catch (...) {
+                std::cout << "[前端 console] " << message << std::endl;
+            }
+            return;
+        }
+
+        if (method == "getRandomWord") {
             handleGetRandomWord();
+            return;
         }
-        else if (message.find("\"method\":\"submitAnswer\"") != std::string::npos) {
-            // 提取数据
-            size_t dataStart = message.find("\"data\":") + 8;
-            size_t dataEnd = message.find("\"", dataStart);
-            std::string data = message.substr(dataStart, dataEnd - dataStart);
 
-            // 简单的数据解析
-            size_t answerStart = data.find("answer\":\"") + 9;
-            size_t answerEnd = data.find("\"", answerStart);
-            std::string userAnswer = data.substr(answerStart, answerEnd - answerStart);
-
-            size_t wordStart = data.find("currentWord\":\"") + 14;
-            size_t wordEnd = data.find("\"", wordStart);
-            std::string currentWord = data.substr(wordStart, wordEnd - wordStart);
-
-            handleSubmitAnswer(userAnswer, currentWord);
+        if (method == "submitAnswer") {
+            auto data = j["data"];
+            std::string answer = data.value("answer", "");
+            std::string currentWord = data.value("currentWord", "");
+            handleSubmitAnswer(answer, currentWord);
+            return;
         }
-        else if (message.find("\"method\":\"showAnswer\"") != std::string::npos) {
-            size_t dataStart = message.find("\"data\":\"") + 8;
-            size_t dataEnd = message.find("\"", dataStart);
-            std::string currentWord = message.substr(dataStart, dataEnd - dataStart);
+
+        if (method == "showAnswer") {
+            auto data = j["data"];
+            std::string currentWord = data.value("currentWord", "");
             handleShowAnswer(currentWord);
+            return;
         }
-        else if (message.find("\"method\":\"loadWordsFile\"") != std::string::npos) {
-            size_t dataStart = message.find("\"data\":\"") + 8;
-            size_t dataEnd = message.find("\"", dataStart);
-            std::string filename = message.substr(dataStart, dataEnd - dataStart);
+
+        if (method == "loadWordsFile") {
+            auto data = j["data"];
+            std::string filename = data.value("filename", "");
             handleLoadWordsFile(filename);
+            return;
         }
-        else if (message.find("\"method\":\"getStats\"") != std::string::npos) {
+
+        if (method == "loadWordsContent" || method == "loadWordsContent" ) {
+            auto data = j["data"];
+            std::string filename = data.value("filename", "upload.txt");
+            std::string content = data.value("content", "");
+            handleLoadWordsFileContent(filename, content);
+            return;
+        }
+
+        if (method == "getStats") {
             handleGetStats();
+            return;
         }
-        else if (message.find("\"method\":\"getAllWords\"") != std::string::npos) {
+
+        if (method == "getAllWords") {
             handleGetAllWords();
+            return;
         }
-        else if (message.find("\"method\":\"resetProgress\"") != std::string::npos) {
+
+        if (method == "resetProgress") {
             handleResetProgress();
+            return;
         }
 
     } catch (const std::exception& e) {
@@ -267,6 +298,32 @@ void WebViewBridge::handleLoadWordsFile(const std::string& filename) {
         handleGetStats();
     } else {
         sendToFrontend("error", "{\"message\":\"无法加载单词库文件\"}");
+    }
+}
+
+void WebViewBridge::handleLoadWordsFileContent(const std::string& filename, const std::string& content) {
+    // 写入到临时文件并调用现有加载逻辑
+    std::time_t t = std::time(nullptr);
+    std::string tmpPath = "/tmp/vocabmemster_upload_" + std::to_string(t) + "_" + filename;
+
+    std::ofstream ofs(tmpPath, std::ios::binary);
+    if (!ofs.is_open()) {
+        sendToFrontend("error", "{\"message\":\"无法创建临时文件\"}");
+        return;
+    }
+    ofs << content;
+    ofs.close();
+
+    bool ok = wordManager.loadWordsFromFile(tmpPath);
+
+    // 尝试删除临时文件（忽略错误）
+    std::remove(tmpPath.c_str());
+
+    if (ok) {
+        sendToFrontend("wordsLoaded", "{\"message\":\"单词库加载成功\", \"count\":" + std::to_string(wordManager.getTotalWords()) + "}");
+        handleGetStats();
+    } else {
+        sendToFrontend("error", "{\"message\":\"无法加载上传的单词库\"}");
     }
 }
 

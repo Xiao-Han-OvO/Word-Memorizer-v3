@@ -30,6 +30,7 @@ export const Constants = {
 		SUBMIT_ANSWER: 'submitAnswer',
 		SHOW_ANSWER: 'showAnswer',
 		LOAD_WORDS_FILE: 'loadWordsFile',
+		LOAD_WORDS_CONTENT: 'loadWordsContent',
 		SAVE_SETTINGS: 'saveSettings',
 		EXPORT_WRONG_WORDS: 'exportWrongWords',
 		RESET_PROGRESS: 'resetProgress',

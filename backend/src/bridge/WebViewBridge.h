@@ -45,6 +45,7 @@ private:
 	void handleSubmitAnswer(const std::string& userAnswer, const std::string& currentWord);
 	void handleShowAnswer(const std::string& currentWord);
 	void handleLoadWordsFile(const std::string& filename);
+	void handleLoadWordsFileContent(const std::string& filename, const std::string& content);
 	void handleSaveSettings(const std::string& settingsJson);
 	void handleExportWrongWords(const std::string& filename);
 	void handleResetProgress();

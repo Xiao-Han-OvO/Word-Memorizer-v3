@@ -266,7 +266,16 @@ const loadFile = () => {
 const onFileSelected = (event) => {
 	const file = event.target.files[0]
 	if (file) {
-		wordStore.loadWordsFile(file.path || file.name)
+		const reader = new FileReader()
+		reader.onload = (e) => {
+			const text = e.target.result
+			// 发送文件内容到后端以便解析
+			wordStore.loadWordsFileContent(text, file.name)
+		}
+		reader.onerror = (e) => {
+			console.error('读取文件失败', e)
+		}
+		reader.readAsText(file)
 	}
 	event.target.value = ''
 }
