@@ -1694,4 +1694,6 @@ CMakeFiles/vocabmemster.dir/src/bridge/WebViewBridge.cpp.o: \
  /usr/include/nlohmann/thirdparty/hedley/hedley_undef.hpp \
  /workspaces/Word-Memorizer-v3/backend/src/core/SettingsManager.h \
  /workspaces/Word-Memorizer-v3/backend/src/bridge/MessageHandler.h \
- /usr/include/c++/13/iostream
+ /usr/include/c++/13/iostream /usr/include/c++/13/thread \
+ /usr/include/c++/13/bits/std_thread.h \
+ /usr/include/c++/13/bits/this_thread_sleep.h /usr/include/c++/13/chrono

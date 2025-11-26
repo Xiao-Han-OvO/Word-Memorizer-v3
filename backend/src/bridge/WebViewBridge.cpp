@@ -5,6 +5,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <thread>
+#include <chrono>
+#include <cstdlib>
 
 WebViewBridge::WebViewBridge(WordManager& wm, SettingsManager& sm, Gtk::Window& window)
     : wordManager(wm), settingsManager(sm), mainWindow(window), webView(nullptr) {
@@ -63,22 +66,22 @@ void WebViewBridge::loadFrontend() {
     // 搜索可能的前端位置（本地开发与构建产物）
     std::vector<std::string> candidates;
     auto cwd = std::filesystem::current_path().string();
-    candidates.push_back(cwd + "/resources/web-ui/index.html");
-    candidates.push_back(cwd + "/backend/build/resources/web-ui/index.html");
-    candidates.push_back(cwd + "/backend/resources/web-ui/index.html");
-    candidates.push_back(cwd + "/frontend/dist/index.html");
-    candidates.push_back(cwd + "/frontend/index.html");
+    candidates.push_back(cwd + "/resources/web-ui");
+    candidates.push_back(cwd + "/backend/build/resources/web-ui");
+    candidates.push_back(cwd + "/backend/resources/web-ui");
+    candidates.push_back(cwd + "/frontend/dist");
 
-    std::string foundPath;
+    std::string foundDir;
     for (const auto& p : candidates) {
-        if (std::filesystem::exists(p)) {
-            foundPath = p;
+        std::string indexPath = p + "/index.html";
+        if (std::filesystem::exists(indexPath)) {
+            foundDir = p;
             break;
         }
     }
 
-    if (foundPath.empty()) {
-        std::cerr << "前端文件在候选路径中未找到。候选路径如下：\n";
+    if (foundDir.empty()) {
+        std::cerr << "前端目录在候选路径中未找到。候选路径如下：\n";
         for (const auto& p : candidates) std::cerr << "  " << p << "\n";
 
         std::string errorHtml = R"(
@@ -95,49 +98,27 @@ void WebViewBridge::loadFrontend() {
         return;
     }
 
-    // 读取 HTML 文件并注入 base 标签以修正资源路径
-    std::ifstream htmlFile(foundPath);
-    if (!htmlFile.is_open()) {
-        std::cerr << "无法打开前端文件: " << foundPath << std::endl;
-        webkit_web_view_load_html(webView, "<html><body><h1>错误</h1><p>无法打开前端文件</p></body></html>", nullptr);
-        return;
+    // 启动本地 HTTP 服务器（如果尚未启动）
+    static bool serverStarted = false;
+    if (!serverStarted) {
+        // 使用 Python 启动一个简单的 HTTP 服务器
+        std::string command = "cd '" + foundDir + "' && python3 -m http.server 8888 > /dev/null 2>&1 &";
+        int result = system(command.c_str());
+        if (result == 0) {
+            std::cout << "HTTP 服务器已在后台启动（端口 8888）" << std::endl;
+            serverStarted = true;
+            // 给服务器一些时间启动
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        } else {
+            std::cerr << "无法启动 HTTP 服务器，尝试从本地文件加载" << std::endl;
+            // 降级到文件加载
+        }
     }
 
-    std::stringstream htmlBuffer;
-    htmlBuffer << htmlFile.rdbuf();
-    std::string htmlContent = htmlBuffer.str();
-    htmlFile.close();
-
-    // 获取 HTML 文件所在目录作为 base URL
-    std::filesystem::path htmlDir = std::filesystem::path(foundPath).parent_path();
-    std::string baseUrl = "file://" + htmlDir.string() + "/";
-
-    // 将以 /assets/ 开头的绝对路径转换为相对路径（file:// 加上 base tag 不会影响以 / 开头的绝对路径）
-    // 例如将 "/assets/.." -> "assets/.."，以便相对于 baseUrl 正确加载资源
-    std::string from = "/assets/";
-    std::string to = "assets/";
-    size_t pos = 0;
-    while ((pos = htmlContent.find(from, pos)) != std::string::npos) {
-        htmlContent.replace(pos, from.length(), to);
-        pos += to.length();
-    }
-
-    // 在 <head> 中注入 <base> 标签以修正其它相对资源路径
-    size_t headPos = htmlContent.find("</head>");
-    if (headPos != std::string::npos) {
-        std::string baseTag = "<base href=\"" + baseUrl + "\">\n";
-        htmlContent.insert(headPos, baseTag);
-    }
-
-    // 调试输出：检查是否仍存在以 /assets/ 开头的引用（用于排查 file:// 加载问题）
-    if (htmlContent.find("/assets/") != std::string::npos) {
-        std::cout << "注意：HTML 内容仍包含 '/assets/' 绝对引用，可能导致资源加载失败 via file://" << std::endl;
-    } else {
-        std::cout << "HTML 内容中的 /assets/ 已被重写为相对路径。" << std::endl;
-    }
-
-    std::cout << "加载前端（带 base URL）: " << baseUrl << std::endl;
-    webkit_web_view_load_html(webView, htmlContent.c_str(), baseUrl.c_str());
+    // 尝试从 HTTP 服务器加载；如果失败，降级到文件加载
+    std::string httpUrl = "http://localhost:8888/index.html";
+    std::cout << "尝试加载前端：" << httpUrl << std::endl;
+    webkit_web_view_load_uri(webView, httpUrl.c_str());
 }
 
 void WebViewBridge::handleFrontendMessage(const std::string& message) {
