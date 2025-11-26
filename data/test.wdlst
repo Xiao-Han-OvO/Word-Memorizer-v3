@@ -1,0 +1,21 @@
+"words" : [
+	"1" :[
+		"word" : "suffer",
+		"pos" : "v."
+		"meaning" : "受苦，遭受",
+		"sentence" : "Paris had _______ a sudden heart failure.",
+		"extend" : [
+			"1" : [
+				"word" : "suffering",
+				"pos" : "n.",
+				"meaning" : "痛苦；苦难"
+			]
+		]
+	],
+	"2" : [
+		"word" : "antique",
+		"pos" : "n.",
+		"meaning" : "古董",
+		"sentence" : "He can distinguish a genuine _____ from a reproduction."
+	]
+]

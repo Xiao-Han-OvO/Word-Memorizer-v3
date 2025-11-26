@@ -1,0 +1,3 @@
+/home/lsoi10/Word Memorizer v3/backend/build/CMakeFiles/vocabmemster.dir
+/home/lsoi10/Word Memorizer v3/backend/build/CMakeFiles/edit_cache.dir
+/home/lsoi10/Word Memorizer v3/backend/build/CMakeFiles/rebuild_cache.dir
