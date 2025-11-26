@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useWordStore } from '@stores/word'
 import { AppConfig } from '@settings/app.config'
 import { bridge } from '@utils/bridge'
