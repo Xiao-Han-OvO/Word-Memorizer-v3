@@ -1,0 +1,29 @@
+/* 深色模式通用样式 */
+.dark {
+	color-scheme: dark;
+}
+
+.dark .card {
+	background-color: var(--card-bg-color);
+	border-color: var(--border-color);
+}
+
+.dark .input {
+	background-color: #374151;
+	border-color: #4b5563;
+	color: #f9fafb;
+}
+
+.dark .input:focus {
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dark .btn-secondary {
+	background-color: #4b5563;
+	color: #f9fafb;
+}
+
+.dark .btn-secondary:hover {
+	background-color: #6b7280;
+}

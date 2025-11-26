@@ -1,0 +1,16 @@
+/* 蓝色主题变量 */
+.theme-blue {
+	--color-primary: #3498db;
+	--color-secondary: #2980b9;
+	--color-accent: #74b9ff;
+}
+
+.theme-blue.light {
+	--app-bg-color: #f0f8ff;
+	--main-bg-color: #ffffff;
+}
+
+.theme-blue.dark {
+	--app-bg-color: #0f141a;
+	--main-bg-color: #0f141a;
+}

@@ -1,0 +1,235 @@
+<template>
+	<div :class="appClasses">
+		<!-- 顶部导航栏 -->
+		<header class="app-header bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+			<div class="container mx-auto px-4 py-3">
+				<div class="flex items-center justify-between">
+					<!-- 应用标题 -->
+					<div class="flex items-center space-x-3">
+						<h1 class="text-xl font-bold text-gray-900 dark:text-white">
+							VocabMemster
+						</h1>
+						<span class="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded">
+							v{{ appConfig.version }}
+						</span>
+					</div>
+
+					<!-- 导航菜单 -->
+					<nav class="flex items-center space-x-1">
+						<button
+							v-for="nav in navigation"
+							:key="nav.name"
+							@click="switchView(nav.route)"
+							:class="[
+								'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+								currentView === nav.route
+									? 'bg-blue-500 text-white shadow-md'
+									: 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+							]"
+						>
+							{{ nav.name }}
+						</button>
+					</nav>
+
+					<!-- 右侧操作 -->
+					<div class="flex items-center space-x-3">
+						<!-- 主题切换 -->
+						<button
+							@click="toggleTheme"
+							class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							:title="themeStore.isDarkMode ? '切换到浅色模式' : '切换到深色模式'"
+						>
+							<span v-if="themeStore.isDarkMode">🌙</span>
+							<span v-else>☀️</span>
+						</button>
+
+						<!-- 菜单按钮 -->
+						<div class="relative">
+							<button
+								@click="showMenu = !showMenu"
+								class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+							>
+								⋮
+							</button>
+							<transition
+								enter-active-class="transition duration-100 ease-out"
+								enter-from-class="transform scale-95 opacity-0"
+								enter-to-class="transform scale-100 opacity-100"
+								leave-active-class="transition duration-75 ease-in"
+								leave-from-class="transform scale-100 opacity-100"
+								leave-to-class="transform scale-95 opacity-0"
+							>
+								<div
+									v-if="showMenu"
+									class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50"
+								>
+									<button
+										@click="openFile"
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+									>
+										打开单词库
+									</button>
+									<button
+										@click="resetProgress"
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+									>
+										重置进度
+									</button>
+									<hr class="my-1 border-gray-200 dark:border-gray-600">
+									<button
+										@click="showUsage"
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+									>
+										使用说明
+									</button>
+									<button
+										@click="showAbout"
+										class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+									>
+										关于
+									</button>
+								</div>
+							</transition>
+						</div>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<!-- 主内容区域 -->
+		<main class="app-main flex-1 overflow-auto">
+			<router-view />
+		</main>
+
+		<!-- 对话框系统 -->
+		<DialogSystem />
+	</div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useThemeStore } from '@stores/theme'
+import { useWordStore } from '@stores/word'
+import { AppConfig } from '@settings/app.config'
+import { bridge } from '@utils/bridge'
+import DialogSystem from '@components/DialogSystem.vue'
+
+const router = useRouter()
+const themeStore = useThemeStore()
+const wordStore = useWordStore()
+
+const appConfig = AppConfig
+const currentView = ref('learning')
+const showMenu = ref(false)
+
+// 导航菜单项
+const navigation = [
+	{ name: '学习', route: 'learning' },
+	{ name: '单词管理', route: 'word-manager' },
+	{ name: '设置', route: 'settings' }
+]
+
+// 应用样式类
+const appClasses = computed(() => ({
+	'app-container': true,
+	'h-screen': true,
+	'flex': true,
+	'flex-col': true,
+	'dark': themeStore.isDarkMode,
+	[`theme-${themeStore.currentTheme}`]: true
+}))
+
+// 切换视图
+const switchView = (route) => {
+	currentView.value = route
+	router.push({ name: route })
+}
+
+// 切换主题
+const toggleTheme = () => {
+	themeStore.toggleDarkMode()
+}
+
+// 打开文件
+const openFile = () => {
+	// 通过后端打开文件选择对话框
+	bridge.send('loadWordsFile', {})
+	showMenu.value = false
+}
+
+// 重置进度
+const resetProgress = () => {
+	if (confirm('确定要重置所有学习进度吗？此操作不可撤销。')) {
+		bridge.send('resetProgress', {})
+	}
+	showMenu.value = false
+}
+
+// 显示使用说明
+const showUsage = () => {
+	// 实现使用说明对话框
+	console.log('打开使用说明')
+	showMenu.value = false
+}
+
+// 显示关于对话框
+const showAbout = () => {
+	// 实现关于对话框
+	console.log('打开关于对话框')
+	showMenu.value = false
+}
+
+// 键盘快捷键
+const handleKeyPress = (event) => {
+	// Ctrl+Tab - 下一个单词
+	if (event.ctrlKey && event.key === 'Tab') {
+		event.preventDefault()
+		if (currentView.value === 'learning') {
+			wordStore.loadRandomWord()
+		}
+	}
+	// Alt+S - 显示答案
+	else if (event.altKey && event.key === 's') {
+		event.preventDefault()
+		if (currentView.value === 'learning') {
+			wordStore.showAnswer()
+		}
+	}
+	// Ctrl+Shift+D - 切换主题
+	else if (event.ctrlKey && event.shiftKey && event.key === 'D') {
+		event.preventDefault()
+		toggleTheme()
+	}
+}
+
+// 生命周期
+onMounted(() => {
+	document.addEventListener('keydown', handleKeyPress)
+	// 初始化主题
+	themeStore.initializeTheme()
+})
+
+onUnmounted(() => {
+	document.removeEventListener('keydown', handleKeyPress)
+})
+</script>
+
+<style scoped>
+.app-container {
+	background: var(--app-bg-color);
+	color: var(--text-color);
+	transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.app-header {
+	backdrop-filter: blur(10px);
+	position: sticky;
+	top: 0;
+	z-index: 40;
+}
+
+.app-main {
+	background: var(--main-bg-color);
+}
+</style>
