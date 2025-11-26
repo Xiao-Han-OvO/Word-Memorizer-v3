@@ -76,6 +76,7 @@ void WebViewBridge::loadFrontend() {
         std::string indexPath = p + "/index.html";
         if (std::filesystem::exists(indexPath)) {
             foundDir = p;
+            std::cout << "找到前端目录: " << foundDir << std::endl;
             break;
         }
     }
@@ -101,23 +102,30 @@ void WebViewBridge::loadFrontend() {
     // 启动本地 HTTP 服务器（如果尚未启动）
     static bool serverStarted = false;
     if (!serverStarted) {
+        // 先尝试 kill 任何现有的进程（防止端口占用）
+        system("pkill -f 'python3 -m http.server 8888' > /dev/null 2>&1");
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
         // 使用 Python 启动一个简单的 HTTP 服务器
-        std::string command = "cd '" + foundDir + "' && python3 -m http.server 8888 > /dev/null 2>&1 &";
+        // 输出到日志文件便于诊断
+        std::string logFile = "/tmp/vocabmemster_server.log";
+        std::string command = "cd '" + foundDir + "' && python3 -m http.server 8888 > " + logFile + " 2>&1 &";
+        std::cout << "执行命令: " << command << std::endl;
         int result = system(command.c_str());
+        
         if (result == 0) {
-            std::cout << "HTTP 服务器已在后台启动（端口 8888）" << std::endl;
+            std::cout << "HTTP 服务器启动命令已执行（端口 8888）" << std::endl;
             serverStarted = true;
-            // 给服务器一些时间启动
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            // 给服务器更多时间启动
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         } else {
-            std::cerr << "无法启动 HTTP 服务器，尝试从本地文件加载" << std::endl;
-            // 降级到文件加载
+            std::cerr << "HTTP 服务器启动失败，返回码: " << result << std::endl;
         }
     }
 
-    // 尝试从 HTTP 服务器加载；如果失败，降级到文件加载
+    // 尝试从 HTTP 服务器加载
     std::string httpUrl = "http://localhost:8888/index.html";
-    std::cout << "尝试加载前端：" << httpUrl << std::endl;
+    std::cout << "尝试加载前端: " << httpUrl << std::endl;
     webkit_web_view_load_uri(webView, httpUrl.c_str());
 }
 
