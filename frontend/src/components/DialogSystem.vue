@@ -204,7 +204,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useWordStore } from '@stores/word'
 import { AppConfig } from '@settings/app.config'
 import { bridge } from '@utils/bridge'
