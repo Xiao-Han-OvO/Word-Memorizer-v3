@@ -13,7 +13,7 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	
 	// 标题
 	Gtk::Label* titleLabel = Gtk::manage(new Gtk::Label("WordMemorizer - 使用说明"));
-	titleLabel->override_font(Pango::FontDescription("Sans Bold 18"));
+	titleLabel->override_font(Pango::FontDescription("Bold 18"));
 	titleLabel->set_margin_bottom(15);
 	titleLabel->get_style_context()->add_class("title");
 	
@@ -28,9 +28,9 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	
 	// 设置使用说明内容
 	Glib::ustring usageText = R"(
-	<span font_desc="Sans Bold 16">📖 单词记忆大师使用指南</span>
+	<span font_desc="Bold 16">📖 单词记忆大师使用指南</span>
 
-	<span font_desc="Sans Bold 14">🎯 基本操作</span>
+	<span font_desc="Bold 14">🎯 基本操作</span>
 
 	<b>• 开始学习</b>
 	   - 通过 <i>文件 → 打开单词库</i> 加载你的单词文件
@@ -44,7 +44,7 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	   - <i>下一个单词</i>：加载新的单词
 	   - <i>查看答案</i>：显示当前单词的正确答案
 
-	<span font_desc="Sans Bold 14">⌨️ 快捷键</span>
+	<span font_desc="Bold 14">⌨️ 快捷键</span>
 
 	• <b>Ctrl + Tab</b> - 切换到下一个单词
 	• <b>Alt + S</b> - 显示当前单词答案
@@ -54,7 +54,7 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	• <b>Alt + E</b> - 导出错词本
 	• <b>回车键</b> - 提交答案
 
-	<span font_desc="Sans Bold 14">📊 学习功能</span>
+	<span font_desc="Bold 14">📊 学习功能</span>
 
 	<b>• 进度跟踪</b>
 	   - 实时显示学习进度百分比
@@ -66,7 +66,7 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	   - 支持错词复习和导出
 	   - 可通过 <i>查看 → 查看错词本</i> 访问
 
-	<span font_desc="Sans Bold 14">🛠️ 高级功能</span>
+	<span font_desc="Bold 14">🛠️ 高级功能</span>
 
 	<b>• 单词管理</b>
 	   - 通过 <i>文件 → 管理单词</i> 编辑单词库
@@ -78,14 +78,14 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	   - 清空错词本
 	   - 导出学习数据
 
-	<span font_desc="Sans Bold 14">💡 学习技巧</span>
+	<span font_desc="Bold 14">💡 学习技巧</span>
 
 	1. <b>定期复习</b>：建议每天坚持学习15-30分钟
 	2. <b>主动回忆</b>：尽量先尝试回忆，再看答案
 	3. <b>结合例句</b>：通过例句理解单词的用法
 	4. <b>错词重点</b>：针对错词进行专项练习
 
-	<span font_desc="Sans Bold 12">📝 文件格式说明</span>
+	<span font_desc="Bold 12">📝 文件格式说明</span>
 
 	单词库文件为文本格式，每行一个单词，格式为：
 	<tt>单词|词性|中文释义|例句</tt>
@@ -94,14 +94,14 @@ UsageDialog::UsageDialog(Gtk::Window& parent)
 	<tt>apple|n.|苹果|I eat an apple every day.</tt>
 	<tt>run|v.|跑步|He runs in the park every morning.</tt>
 
-	<span font_desc="Sans Bold 12">🆘 获取帮助</span>
+	<span font_desc="Bold 12">🆘 获取帮助</span>
 
 	如遇问题，可通过以下方式：
 	• 查看调试信息：<i>查看 → 调试信息</i>
 	• 重置应用程序：<i>文件 → 重置进度</i>
 	• 检查单词文件格式是否正确
 
-	<span font_desc="Sans Italic 10">版本 3.0.1 Alpha RC 2 - 设计用于高效单词记忆</span>
+	<span font_desc="Italic 10">版本 3.0.1 Alpha RC 2 - 设计用于高效单词记忆</span>
 	)";
 
 	contentLabel.set_markup(usageText);

@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <linux/limits.h>
 #include <vector>
+#include <fontconfig/fontconfig.h>
+#include <pango/pangocairo.h>
 
 Glib::RefPtr<Gtk::CssProvider> GlassTheme::css_provider;
 Glib::RefPtr<Gdk::Screen> GlassTheme::screen;
@@ -36,6 +38,38 @@ Gdk::RGBA mix(const Gdk::RGBA& color, const Gdk::RGBA& target, double amount) {
                    color.get_green() * (1 - amount) + target.get_green() * amount,
                    color.get_blue() * (1 - amount) + target.get_blue() * amount, 1.0);
     return mixed;
+}
+
+Gdk::RGBA darken_for_text(const Gdk::RGBA& background, const Gdk::RGBA& text, double minimum) {
+    if (contrast(background, text) >= minimum) return background;
+    double low = 0, high = 1;
+    const Gdk::RGBA black("#000000");
+    for (int i = 0; i < 20; ++i) {
+        const double amount = (low + high) / 2;
+        if (contrast(mix(background, black, amount), text) < minimum) low = amount;
+        else high = amount;
+    }
+    return mix(background, black, high);
+}
+
+void register_fonts(const std::vector<std::string>& directories) {
+    static bool initialized = false;
+    if (initialized) return;
+    initialized = true;
+    bool loaded = false;
+    for (const auto& directory : directories) {
+        bool found = false;
+        for (const auto* style : {"Regular", "Semibold", "Bold", "RegularItalic"}) {
+            const std::string filename = directory + "/fonts/SF-Pro-Display-" + style + ".otf";
+            if (access(filename.c_str(), R_OK) == 0 &&
+                FcConfigAppFontAddFile(FcConfigGetCurrent(), reinterpret_cast<const FcChar8*>(filename.c_str()))) {
+                found = loaded = true;
+            }
+        }
+        if (found) break;
+    }
+    // 更新当前进程的字体映射；不安装字体，也不写入用户的字体缓存。
+    if (loaded) pango_font_map_changed(pango_cairo_font_map_get_default());
 }
 }
 
@@ -67,6 +101,7 @@ void GlassTheme::init(bool use_builtin) {
         "resources",
         "/usr/local/share/word_memorizer/resources"
     };
+    register_fonts(candidates);
 
     bool loaded = false;
     if (!use_builtin) {
@@ -121,14 +156,21 @@ void GlassTheme::apply_theme(bool dark, const std::string& accent_color) {
     Gdk::RGBA accent;
     if (!accent.set(accent_color)) accent.set("#3498db");
     accent.set_alpha(1.0);
-    const bool white_text = contrast(accent, Gdk::RGBA("#ffffff")) >= 4.5;
-    const Gdk::RGBA text(white_text ? "#ffffff" : "#000000");
-    const Gdk::RGBA hover = mix(accent, Gdk::RGBA(white_text ? "#000000" : "#ffffff"), 0.08);
-    const Gdk::RGBA active = mix(accent, Gdk::RGBA(white_text ? "#000000" : "#ffffff"), 0.16);
+    const Gdk::RGBA accent_foreground = readable_color(accent.to_string());
+    const bool white_text = dark || contrast(accent, Gdk::RGBA("#ffffff")) >= 4.5;
+    const Gdk::RGBA text(dark ? "#f1f5f9" : (white_text ? "#ffffff" : "#000000"));
+    // 深色页面使用浅色文字和图标，调整按钮底色而不是把前景切换成黑色。
+    if (dark) accent = darken_for_text(accent, text, 5.6);
+    Gdk::RGBA hover = mix(accent, Gdk::RGBA(dark || !white_text ? "#ffffff" : "#000000"), 0.08);
+    Gdk::RGBA active = mix(accent, Gdk::RGBA(dark || !white_text ? "#ffffff" : "#000000"), 0.16);
+    if (dark) {
+        hover = darken_for_text(hover, text, 5.0);
+        active = darken_for_text(active, text, 4.6);
+    }
     std::string combined =
         "@define-color wm_accent " + accent.to_string() + ";\n" +
         "@define-color wm_accent_text " + text.to_string() + ";\n" +
-        "@define-color wm_accent_fg " + readable_color(accent.to_string()).to_string() + ";\n" +
+        "@define-color wm_accent_fg " + accent_foreground.to_string() + ";\n" +
         "@define-color wm_accent_hover " + hover.to_string() + ";\n" +
         "@define-color wm_accent_active " + active.to_string() + ";\n" + base_css;
     if (dark) combined += "\n" + dark_css;
@@ -179,10 +221,17 @@ void GlassTheme::configure_window(Gtk::Window& window, const Glib::ustring& titl
     header->set_show_close_button(true);
     header->set_decoration_layout(main_window ? ":minimize,maximize,close" : ":close");
     header->get_style_context()->add_class("custom-titlebar");
+    auto* label = Gtk::manage(new Gtk::Label(title));
+    label->get_style_context()->add_class("window-title");
+    label->set_halign(Gtk::ALIGN_CENTER);
+    label->set_valign(Gtk::ALIGN_CENTER);
+    label->set_single_line_mode(true);
+    label->set_ellipsize(Pango::ELLIPSIZE_END);
+    header->set_custom_title(*label);
     window.set_title(title);
     window.set_decorated(true);
     window.set_titlebar(*header);
-    header->show();
+    header->show_all();
     style_window(window);
 }
 

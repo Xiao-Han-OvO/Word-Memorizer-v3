@@ -1,6 +1,17 @@
 # CLI handoff
 
-The dark-theme and title-bar task is complete. Follow `AGENTS.md` for further work.
+The latest UI corrections are implemented and verified. Follow `AGENTS.md` for further work.
+
+## Latest UI corrections (2026-11-20)
+
+- After checkpoint `2c05fc4`, the user reported dark foregrounds on main-window icons and text, awkward title-bar rounding/alignment, and requested SF Pro Display from the installed fonts. The correction checkpoint uses the commit message `Fix dark foregrounds and bundle SF Pro Display`.
+- Dark action buttons now use light text and SVG strokes. Their backgrounds are darkened while preserving the selected hue; normal, hover and active states retain readable contrast. Accent text and saved custom learning colors continue to use their own readable foreground colors.
+- SVG icons refresh their foreground at draw time as well as on style/theme/state changes. The default color argument is now empty rather than a hardcoded dark stroke. Regression checks compare each RGB channel for all visible main-window SVGs, including disabled buttons and both theme-switch directions.
+- Native GTK header bars use a single-line centered title label and SF Pro Display at weight 600. Text/icon shadows are removed. Inner title-bar rounding matches the outer border; solid windows without a compositor use square corners throughout, avoiding the previous corner gaps.
+- Four user-provided SF Pro Display faces (Regular, Semibold, Bold, Regular Italic) are included in `Word Memorizer/resources/fonts/` and copied by CMake. `GlassTheme::init()` registers them with the current process's Fontconfig and refreshes Pango's font map. Widget font overrides retain size/weight without forcing Sans. Chinese falls back to Noto Sans CJK SC or another available system font.
+- Both `build/bin/word_memorizer` and `build-local/bin/word_memorizer` exist locally. The former dates from 2026-11-09 and still has the old theme; the user's launch path was not confirmed. Run the current `build-local/bin/word_memorizer`. Do not overwrite or reuse the old CMake cache.
+- The current single-threaded whole-suite run passed all four targets in 37.80 s: vocabulary (0.00 s), GUI behavior (12.72 s), startup (0.64 s), styling (24.39 s). A separate `GTK_THEME=Yaru` style run passed in 23.25 s. New checks cover ten dark accent colors, button states, actual SF Pro Display English glyph runs with Chinese fallback, and title-label geometry.
+- Main-window light/dark previews were visually reviewed after the corrections. Styling tests now have a 90-second timeout to accommodate the expanded checks and font-heavy desktops. Xvfb checks remain without a compositor; actual native desktop/Wayland interaction has not been exercised.
 
 ## Recovery status (2026-11-20)
 
@@ -8,7 +19,7 @@ The dark-theme and title-bar task is complete. Follow `AGENTS.md` for further wo
 - A live GitHub history check confirmed that `dev` already contained both earlier checkpoints, `780faf8` (10:39 CST) and `a560952` (10:46 CST), on 2026-11-20. Those commits had been published; the later styling changes were still uncommitted at takeover.
 - The user had requested publishing to `Xiao-Han-OvO/Word-Memorizer-v3`, branch `dev`. The final styling checkpoint is identified by the commit message `Complete GTK dark theme and native title bars`; it includes the code, regression tests, README and this handoff.
 - Check `git status --short --branch` and `git log -1 --oneline` when resuming. If the styling checkpoint is still ahead of `origin/dev`, finish the normal push to `dev` before starting another task.
-- No implementation work remains for the dark-theme/title-bar task. A subsequent feature or fix has not been specified. Native desktop/Wayland interaction remains unverified.
+- The first styling checkpoint was published as `2c05fc4`. The subsequent user-requested corrections are described above; check the current branch status before continuing or publishing further changes.
 - The filename is `HANDOFF.md` (case-sensitive), not `HANDOFF.MD`.
 
 ## Repository
@@ -30,8 +41,8 @@ The dark-theme and title-bar task is complete. Follow `AGENTS.md` for further wo
 
 ## Verification
 
-- The resumed incremental build passed with `cmake --build "Word Memorizer/build-local" --parallel 1`; all targets were already up to date.
-- On 2026-11-20, the single-threaded whole-suite run passed vocabulary (0.04 s), application startup (6.68 s) and styling (19.55 s). GUI behavior hit the 30-second timeout before producing any test output, then passed on a focused rerun (10.15 s). All four targets have passing results, but the whole-suite run was not fully green. Similar GUI/startup timeouts occurred in the previous session; their cause is still unconfirmed.
+- The latest changes built with `cmake --build "Word Memorizer/build-local" --parallel 1`.
+- All four targets passed in the latest whole-suite run; the Yaru style rerun also passed. Earlier sessions had intermittent GUI/startup timeouts, but none occurred in this final verification. Sandboxed Xvfb runs can fail to access their display; use the approved unsandboxed CTest command when that happens.
 - All 16 light/dark previews were rendered and visually reviewed: placeholder, learning, settings, about, help, editor, incorrect answer and completion.
 - GUI tests use temporary settings/vocabulary files and `G_DEBUG=fatal-criticals`; they do not modify personal preferences.
 - Preview PNGs are in `Word Memorizer/build-local/style-previews/`, which is ignored by Git.

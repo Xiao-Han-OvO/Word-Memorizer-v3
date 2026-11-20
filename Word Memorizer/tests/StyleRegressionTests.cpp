@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <glib/gstdio.h>
+#include <fontconfig/fontconfig.h>
 
 template<class T>
 void collect(Gtk::Widget& root, std::vector<T*>& found) {
@@ -85,6 +86,41 @@ double iconBrightness(const Glib::RefPtr<Gdk::Pixbuf>& pixbuf) {
     }
     require(weight > 0.0, "Icon is entirely transparent");
     return brightness / weight;
+}
+
+Gdk::RGBA iconColor(const Glib::RefPtr<Gdk::Pixbuf>& pixbuf) {
+    require(static_cast<bool>(pixbuf), "Icon has no rendered pixels");
+    const auto* pixels = gdk_pixbuf_read_pixels(pixbuf->gobj());
+    const int channels = pixbuf->get_n_channels();
+    double red = 0, green = 0, blue = 0, weight = 0;
+    for (int y = 0; y < pixbuf->get_height(); ++y) {
+        for (int x = 0; x < pixbuf->get_width(); ++x) {
+            const auto* pixel = pixels + y * pixbuf->get_rowstride() + x * channels;
+            const double alpha = channels == 4 ? pixel[3] / 255.0 : 1.0;
+            red += alpha * pixel[0];
+            green += alpha * pixel[1];
+            blue += alpha * pixel[2];
+            weight += alpha;
+        }
+    }
+    require(weight > 0, "Icon is entirely transparent");
+    Gdk::RGBA color;
+    color.set_rgba(red / (255 * weight), green / (255 * weight), blue / (255 * weight), 1);
+    return color;
+}
+
+Gdk::RGBA backgroundBehind(Gtk::Widget& widget) {
+    std::vector<Gtk::Widget*> ancestors;
+    for (auto* current = &widget; current; current = current->get_parent()) ancestors.push_back(current);
+    Gdk::RGBA result("#ffffff");
+    for (auto it = ancestors.rbegin(); it != ancestors.rend(); ++it) {
+        const auto color = (*it)->get_style_context()->get_background_color((*it)->get_state_flags());
+        const double alpha = color.get_alpha();
+        result.set_rgba(color.get_red() * alpha + result.get_red() * (1 - alpha),
+                        color.get_green() * alpha + result.get_green() * (1 - alpha),
+                        color.get_blue() * alpha + result.get_blue() * (1 - alpha), 1);
+    }
+    return result;
 }
 
 void screenshot(Gtk::Window& window, const std::string& name) {
@@ -168,6 +204,112 @@ int main() {
             require(std::fabs(iconBrightness(image->get_pixbuf()) - expected) < 5,
                     "Primary button icon does not follow its readable text color");
         }
+    });
+
+    tests.run("dark action buttons use light text and SVG strokes for every accent", [] {
+        TemporaryDirectory temporary;
+        for (const auto* accent : {"blue", "red", "orange", "green", "cyan", "yellow", "brown", "mono", "purple", "pink"}) {
+            const auto config = temporary.write(std::string("settings-") + accent,
+                std::string("dark_mode=true\ncolor_theme=") + accent + "\n");
+            MainWindow window(config);
+            window.show();
+            auto& button = tooltipButton(window, "设置");
+            for (const auto state : {Gtk::STATE_FLAG_NORMAL, Gtk::STATE_FLAG_PRELIGHT, Gtk::STATE_FLAG_ACTIVE}) {
+                button.set_state_flags(state, true);
+                settle(140);
+                const auto context = button.get_style_context();
+                const auto foreground = context->get_color(button.get_state_flags());
+                const auto background = context->get_background_color(button.get_state_flags());
+                require(luminance(foreground) > 0.8 && contrast(foreground, background) >= 4.5,
+                        std::string("Dark action text is dark or unreadable for accent ") + accent);
+                auto* icon = dynamic_cast<Gtk::Image*>(button.get_image());
+                require(icon && luminance(iconColor(icon->get_pixbuf())) > 0.8,
+                        std::string("Dark action SVG stroke is still dark for accent ") + accent);
+            }
+        }
+    });
+
+    tests.run("every visible main-window SVG follows its foreground through theme and state changes", [] {
+        TemporaryDirectory temporary;
+        const auto config = temporary.write("settings", "dark_mode=false\ncolor_theme=blue\n");
+        MainWindow window(config);
+        window.show();
+        for (int mode = 0; mode < 3; ++mode) {
+            auto& button = tooltipButton(window, "设置");
+            for (bool enabled : {true, false}) {
+                button.set_sensitive(enabled);
+                settle();
+                unsigned checked = 0;
+                for (auto* icon : all<Gtk::Image>(window)) {
+                    if (!icon->get_is_drawable() || icon->get_storage_type() != Gtk::IMAGE_PIXBUF) continue;
+                    const auto actual = iconColor(icon->get_pixbuf());
+                    const auto expected = icon->get_style_context()->get_color(icon->get_state_flags());
+                    require(std::fabs(actual.get_red() - expected.get_red()) < 0.025 &&
+                            std::fabs(actual.get_green() - expected.get_green()) < 0.025 &&
+                            std::fabs(actual.get_blue() - expected.get_blue()) < 0.025,
+                            "A visible SVG retained stale RGB channels");
+                    require(contrast(actual, backgroundBehind(*icon)) >= 3,
+                            "A visible SVG has insufficient contrast against its actual background");
+                    ++checked;
+                }
+                require(checked >= 11, "The SVG check missed navigation, statistics or action icons");
+            }
+            button.set_sensitive(true);
+            if (mode < 2) gtk_button_clicked(tooltipButton(window, "切换深色模式").gobj());
+        }
+    });
+
+    tests.run("bundled SF Pro Display fonts are registered and used for English", [] {
+        auto* fonts = FcConfigGetFonts(FcConfigGetCurrent(), FcSetApplication);
+        bool registered = false;
+        if (fonts) for (int i = 0; i < fonts->nfont; ++i) {
+            FcChar8* family = nullptr;
+            if (FcPatternGetString(fonts->fonts[i], FC_FAMILY, 0, &family) == FcResultMatch &&
+                std::string(reinterpret_cast<const char*>(family)) == "SF Pro Display") registered = true;
+        }
+        require(registered, "Bundled fonts were not registered with Fontconfig");
+        TemporaryDirectory temporary;
+        MainWindow window(temporary.write("settings", "dark_mode=true\ncolor_theme=blue\n"));
+        require(window.loadWordsFromFile(temporary.write("words", "apple|n.|苹果|An apple a day.\n")),
+                "Font fixture was rejected");
+        window.show();
+        settle();
+        Gtk::Label* example = nullptr;
+        for (auto* label : all<Gtk::Label>(window)) if (label->get_text().find("An apple") != Glib::ustring::npos) example = label;
+        require(example, "English example label is missing");
+        auto* layout = example->get_layout()->gobj();
+        require(pango_layout_get_unknown_glyphs_count(layout) == 0, "Mixed Chinese/English text has missing glyphs");
+        auto* iterator = pango_layout_get_iter(layout);
+        bool englishUsesSF = false;
+        do {
+            const auto* run = pango_layout_iter_get_run_readonly(iterator);
+            if (!run || run->item->offset >= static_cast<int>(example->get_text().bytes())) continue;
+            const unsigned char first = example->get_text().raw()[run->item->offset];
+            if (first < 'A' || first > 'z') continue;
+            auto* description = pango_font_describe(run->item->analysis.font);
+            englishUsesSF = std::string(pango_font_description_get_family(description)) == "SF Pro Display";
+            pango_font_description_free(description);
+            if (englishUsesSF) break;
+        } while (pango_layout_iter_next_run(iterator));
+        pango_layout_iter_free(iterator);
+        require(englishUsesSF, "English text still uses a hardcoded Sans family");
+    });
+
+    tests.run("title text is centered inside the native title bar", [] {
+        TemporaryDirectory temporary;
+        MainWindow window(temporary.write("settings", "dark_mode=true\ncolor_theme=blue\n"));
+        window.show();
+        settle();
+        auto* header = dynamic_cast<Gtk::HeaderBar*>(window.get_titlebar());
+        require(header, "Native header bar is missing");
+        Gtk::Label* title = nullptr;
+        for (auto* label : all<Gtk::Label>(*header)) if (label->get_text() == window.get_title()) title = label;
+        require(title, "Title text is missing");
+        int x = 0, y = 0;
+        require(title->translate_coordinates(*header, 0, 0, x, y), "Cannot locate title text");
+        require(std::abs(2 * x + title->get_allocated_width() - header->get_allocated_width()) <= 2 &&
+                std::abs(2 * y + title->get_allocated_height() - header->get_allocated_height()) <= 2,
+                "Title text is offset from the center of the title bar");
     });
 
     tests.run("the main window uses a complete GTK header bar", [] {

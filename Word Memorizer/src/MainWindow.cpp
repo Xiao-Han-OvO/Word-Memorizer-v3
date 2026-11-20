@@ -80,13 +80,13 @@ MainWindow::MainWindow(const std::string& settingsFile)
 
     posLabel.set_justify(Gtk::JUSTIFY_CENTER);
     posLabel.get_style_context()->add_class("word-pos");
-    posLabel.override_font(Pango::FontDescription("Sans Bold 14"));
+    posLabel.override_font(Pango::FontDescription("Bold 14"));
     posLabel.set_margin_bottom(10);
     meaningLabel.set_justify(Gtk::JUSTIFY_CENTER);
-    meaningLabel.override_font(Pango::FontDescription("Sans Bold 20"));
+    meaningLabel.override_font(Pango::FontDescription("Bold 20"));
     meaningLabel.set_margin_bottom(15);
     exampleLabel.set_justify(Gtk::JUSTIFY_CENTER);
-    exampleLabel.override_font(Pango::FontDescription("Sans 12"));
+    exampleLabel.override_font(Pango::FontDescription("12"));
     exampleLabel.set_line_wrap(true);
     exampleLabel.set_max_width_chars(40);
 
@@ -139,7 +139,7 @@ MainWindow::MainWindow(const std::string& settingsFile)
     placeholderBox->pack_start(*alertIcon, Gtk::PACK_SHRINK);
     auto* placeholderLabel = Gtk::manage(new Gtk::Label("暂未打开单词本\n通过左侧「打开」按钮选择词库开始学习"));
     placeholderLabel->set_justify(Gtk::JUSTIFY_CENTER);
-    placeholderLabel->override_font(Pango::FontDescription("Sans 14"));
+    placeholderLabel->override_font(Pango::FontDescription("14"));
     placeholderLabel->get_style_context()->add_class("placeholder-text");
     placeholderBox->pack_start(*placeholderLabel, Gtk::PACK_SHRINK);
     placeholderPage.pack_start(*placeholderBox, Gtk::PACK_EXPAND_WIDGET);
@@ -151,9 +151,9 @@ MainWindow::MainWindow(const std::string& settingsFile)
     completionContent->set_vexpand(true);
     completionContent->get_style_context()->add_class("glass-card");
     completionTitle.set_label("恭喜你！");
-    completionTitle.override_font(Pango::FontDescription("Sans Bold 28"));
+    completionTitle.override_font(Pango::FontDescription("Bold 28"));
     completionStats.set_justify(Gtk::JUSTIFY_CENTER);
-    completionStats.override_font(Pango::FontDescription("Sans 16"));
+    completionStats.override_font(Pango::FontDescription("16"));
     restartButton.get_style_context()->add_class("glass-btn");
     restartButton.set_label("重新开始");
     reviewWrongWordsButton.get_style_context()->add_class("glass-btn-secondary");
@@ -356,7 +356,7 @@ void MainWindow::on_review_wrong_words() {
     std::stringstream header;
     header << "共 " << wrongWords.size() << " 个错词";
     auto* headerLabel = Gtk::manage(new Gtk::Label(header.str()));
-    headerLabel->override_font(Pango::FontDescription("Sans Bold 16"));
+    headerLabel->override_font(Pango::FontDescription("Bold 16"));
     content.pack_start(*headerLabel, Gtk::PACK_SHRINK);
 
     Gtk::ScrolledWindow scrolled;
@@ -369,7 +369,7 @@ void MainWindow::on_review_wrong_words() {
         card->set_border_width(12);
 
         auto* wordLabel = Gtk::manage(new Gtk::Label(w.word + "  [" + w.pos + "]"));
-        wordLabel->override_font(Pango::FontDescription("Sans Bold 14"));
+        wordLabel->override_font(Pango::FontDescription("Bold 14"));
         wordLabel->set_halign(Gtk::ALIGN_START);
 
         auto* meaningLabel = Gtk::manage(new Gtk::Label("释义: " + w.meaning));

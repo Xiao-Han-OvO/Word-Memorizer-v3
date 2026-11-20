@@ -80,25 +80,25 @@ WordCard::WordCard(WordManagerDialog* parent,
 	// 单词标题 - 使用CSS类而不是硬编码颜色
 	wordLabel.set_label(word);
 	wordLabel.set_halign(Gtk::ALIGN_START);
-	wordLabel.override_font(Pango::FontDescription("Sans Bold 16"));
+	wordLabel.override_font(Pango::FontDescription("Bold 16"));
 	wordLabel.get_style_context()->add_class("title");
 	
 	// 词性标签 - 使用muted类
 	posLabel.set_label("[" + pos + "]");
 	posLabel.set_halign(Gtk::ALIGN_START);
-	posLabel.override_font(Pango::FontDescription("Sans 12"));
+	posLabel.override_font(Pango::FontDescription("12"));
 	posLabel.get_style_context()->add_class("muted");
 	
 	// 释义
 	meaningLabel.set_label(meaning);
 	meaningLabel.set_halign(Gtk::ALIGN_START);
-	meaningLabel.override_font(Pango::FontDescription("Sans 14"));
+	meaningLabel.override_font(Pango::FontDescription("14"));
 	meaningLabel.get_style_context()->add_class("subtitle");
 	
 	// 例句 - 使用muted类
 	exampleLabel.set_label("例句: " + example);
 	exampleLabel.set_halign(Gtk::ALIGN_START);
-	exampleLabel.override_font(Pango::FontDescription("Sans 12"));
+	exampleLabel.override_font(Pango::FontDescription("12"));
 	exampleLabel.set_line_wrap(true);
 	exampleLabel.set_max_width_chars(50);
 	exampleLabel.get_style_context()->add_class("muted");

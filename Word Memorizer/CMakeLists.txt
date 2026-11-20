@@ -8,6 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/resources" "${CMAKE_CURRENT_BINARY_DIR}/generated")
 configure_file(resources/style.css "${CMAKE_CURRENT_BINARY_DIR}/resources/style.css" COPYONLY)
 configure_file(resources/style-dark.css "${CMAKE_CURRENT_BINARY_DIR}/resources/style-dark.css" COPYONLY)
+foreach(FONT_STYLE Regular Semibold Bold RegularItalic)
+    configure_file("resources/fonts/SF-Pro-Display-${FONT_STYLE}.otf"
+        "${CMAKE_CURRENT_BINARY_DIR}/resources/fonts/SF-Pro-Display-${FONT_STYLE}.otf" COPYONLY)
+endforeach()
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/resources/style.css" WORD_MEMORIZER_BASE_CSS)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/resources/style-dark.css" WORD_MEMORIZER_DARK_CSS)
 configure_file(src/ThemeResources.h.in "${CMAKE_CURRENT_BINARY_DIR}/generated/ThemeResources.h" @ONLY)
@@ -93,5 +97,7 @@ if(BUILD_TESTING)
         set_tests_properties(gui_regressions application_startup style_regressions PROPERTIES
             ENVIRONMENT "G_DEBUG=fatal-criticals"
             TIMEOUT 30)
+        # 样式检查遍历主题色、控件状态并渲染预览；字体较多的桌面需要更长启动时间。
+        set_tests_properties(style_regressions PROPERTIES TIMEOUT 90)
     endif()
 endif()

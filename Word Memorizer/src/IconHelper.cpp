@@ -96,6 +96,7 @@ class SvgIcon : public Gtk::Image {
 public:
     SvgIcon(const std::string& path, int size, const std::string& color, bool dark)
         : path(path), size(size), requested_color(color == "#333" ? "" : color) {
+        get_style_context()->add_class("wm-svg-icon");
         render(requested_color.empty() ? (dark ? "#e0e0e0" : "#333") : requested_color);
         theme_connection = icon_theme_changed.connect(sigc::mem_fun(*this, &SvgIcon::refresh));
         signal_state_flags_changed().connect(sigc::mem_fun(*this, &SvgIcon::state_changed));
@@ -113,6 +114,13 @@ public:
     }
 
 protected:
+    bool on_draw(const Cairo::RefPtr<Cairo::Context>& context) override {
+        // GTK 可在发出 style-updated 后才解析继承颜色；绘制时再次取当前前景，
+        // 确保主题切换、父按钮状态和新加入窗口的图标都使用本帧的颜色。
+        refresh();
+        return Gtk::Image::on_draw(context);
+    }
+
     void on_style_updated() override {
         Gtk::Image::on_style_updated();
         refresh();

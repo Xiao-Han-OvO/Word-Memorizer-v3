@@ -4,6 +4,10 @@
 
 主窗口和自定义对话框使用 GTK 标题栏。明暗主题覆盖页面、控件和图标；切换主题会更新现有图标，自定义文字颜色会调整亮度以保持可读性。
 
+深色按钮使用浅色文字和 SVG 图标，按钮底色随主题色调整亮度，悬停和按下时也保持对比度。标题文字水平、垂直居中；有合成器时使用一致的内外圆角，无合成器时使用完整的直角边框。
+
+英文优先使用随资源打包的 SF Pro Display，中文回退到 Noto Sans CJK SC 或系统中文字体。字体仅在当前进程中加载。
+
 ## 从源码构建和运行
 
 需要 C++ 编译器、CMake、pkg-config、GTKmm 3、Fontconfig 和 librsvg。Ubuntu / Debian 可安装：
@@ -19,6 +23,8 @@ cmake -S "Word Memorizer" -B "Word Memorizer/build-local" -DCMAKE_BUILD_TYPE=Rel
 cmake --build "Word Memorizer/build-local" --parallel 1
 ./"Word Memorizer/build-local/bin/word_memorizer"
 ```
+
+请使用上面的 `build-local/bin/word_memorizer` 启动本次构建。已有的 `build/bin/word_memorizer` 可能仍是较早的程序，不会随 `build-local` 的构建更新。
 
 运行需要图形桌面环境。主题文件在构建时复制到 `build-local/resources`，程序也提供内置主题。设置保存在 `~/.word_memorizer`，学习进度和错词本保留在当前会话中，可从错词本窗口导出。
 
@@ -48,6 +54,6 @@ cmake --build "Word Memorizer/build-local" --parallel 1
 ctest --test-dir "Word Memorizer/build-local" --output-on-failure --parallel 1
 ```
 
-检查覆盖词库导入失败、重复拼写、文件编码和换行、设置保存与取消、标题栏关闭设置、单词卡片编辑与取消、空答案，以及完成提示在重新开始或更换词库后的行为。样式检查覆盖原生标题栏、图标换色、文字对比度、无合成器的窗口边缘，以及内置和外部主题的一致性。测试使用临时设置文件，不修改个人设置。
+检查覆盖词库导入失败、重复拼写、文件编码和换行、设置保存与取消、标题栏关闭设置、单词卡片编辑与取消、空答案，以及完成提示在重新开始或更换词库后的行为。样式检查覆盖原生标题栏居中、全部主窗口 SVG 的 RGB 换色与禁用状态、十种主题色的按钮对比度、SF Pro Display 的注册与实际英文排版、无合成器的窗口边缘，以及内置和外部主题的一致性。测试使用临时设置文件，不修改个人设置。
 
 明暗主题的页面和对话框预览保存在 `Word Memorizer/build-local/style-previews/`。

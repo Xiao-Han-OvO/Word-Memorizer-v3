@@ -8,7 +8,7 @@
 class IconHelper {
 public:
     static void init_icons();
-    static Gtk::Image* create_icon(const std::string& name, int size = 20, const std::string& color = "#333");
+    static Gtk::Image* create_icon(const std::string& name, int size = 20, const std::string& color = "");
     static Gtk::Button* create_icon_button(const std::string& name, const std::string& text, int icon_size = 20);
 
     // 全局模式设置
