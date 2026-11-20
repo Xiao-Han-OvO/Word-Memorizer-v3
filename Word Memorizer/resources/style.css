@@ -100,6 +100,11 @@ decoration {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
+/* 无合成器时无法绘制透明阴影，避免留下宽大的灰色窗口边缘。 */
+.solid-csd decoration, .word-memorizer.uncomposited decoration {
+  box-shadow: none;
+}
+
 window.maximized decoration, window.fullscreen decoration {
   border: none;
   border-radius: 0;
@@ -192,10 +197,18 @@ switch {
   background-image: none;
   border: 1px solid @wm_border;
   border-radius: 16px;
+  box-shadow: none;
+  color: @wm_text;
 }
 
 switch:checked {
   background-color: @wm_accent;
+  color: @wm_accent_text;
+}
+
+switch:focus, checkbutton:focus, radiobutton:focus {
+  outline: 2px solid alpha(@wm_accent, 0.55);
+  outline-offset: -2px;
 }
 
 switch slider {

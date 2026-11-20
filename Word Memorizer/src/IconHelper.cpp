@@ -28,7 +28,14 @@ const std::string IconHelper::ALERT_TRIANGLE = "alert-triangle";
 std::unordered_map<std::string, std::string> IconHelper::svg_map;
 bool IconHelper::dark_mode = false;
 
-void IconHelper::set_dark_mode(bool dark) { dark_mode = dark; }
+namespace {
+sigc::signal<void> icon_theme_changed;
+}
+
+void IconHelper::set_dark_mode(bool dark) {
+    dark_mode = dark;
+    icon_theme_changed.emit();
+}
 
 void IconHelper::init_icons() {
     svg_map["folder-open"] =
@@ -84,31 +91,68 @@ static std::string build_svg(const std::string& path, int size, const std::strin
     return ss.str();
 }
 
+namespace {
+class SvgIcon : public Gtk::Image {
+public:
+    SvgIcon(const std::string& path, int size, const std::string& color, bool dark)
+        : path(path), size(size), requested_color(color == "#333" ? "" : color) {
+        render(requested_color.empty() ? (dark ? "#e0e0e0" : "#333") : requested_color);
+        theme_connection = icon_theme_changed.connect(sigc::mem_fun(*this, &SvgIcon::refresh));
+        signal_state_flags_changed().connect(sigc::mem_fun(*this, &SvgIcon::state_changed));
+    }
+
+    ~SvgIcon() override {
+        theme_connection.disconnect();
+    }
+
+    void refresh() {
+        // 图标继承所在按钮或卡片的文字颜色，也能正确适配强调色与禁用状态。
+        render(requested_color.empty()
+            ? get_style_context()->get_color(get_state_flags()).to_string().raw()
+            : requested_color);
+    }
+
+protected:
+    void on_style_updated() override {
+        Gtk::Image::on_style_updated();
+        refresh();
+    }
+
+private:
+    const std::string path;
+    const int size;
+    const std::string requested_color;
+    std::string rendered_color;
+    sigc::connection theme_connection;
+
+    void state_changed(Gtk::StateFlags) { refresh(); }
+
+    void render(const std::string& color) {
+        if (color == rendered_color) return;
+        const std::string svg = build_svg(path, size, color);
+        try {
+            const auto loader = Gdk::PixbufLoader::create("svg");
+            loader->write(reinterpret_cast<const guint8*>(svg.data()), svg.size());
+            loader->close();
+            const auto pixbuf = loader->get_pixbuf();
+            if (pixbuf) {
+                rendered_color = color;
+                set(pixbuf);
+            }
+        } catch (const Glib::Error& error) {
+            std::cerr << "Failed to render SVG icon: " << error.what() << '\n';
+        }
+    }
+};
+}
+
 Gtk::Image* IconHelper::create_icon(const std::string& name, int size, const std::string& color) {
-    auto it = svg_map.find(name);
+    const auto it = svg_map.find(name);
     if (it == svg_map.end()) {
-        std::cerr << "Icon not found: " << name << std::endl;
+        std::cerr << "Icon not found: " << name << '\n';
         return Gtk::manage(new Gtk::Image());
     }
-
-    std::string actual_color = color;
-    if (dark_mode && actual_color == "#333") {
-        actual_color = "#e0e0e0";
-    }
-
-    std::string raw_svg = build_svg(it->second, size, actual_color);
-    auto loader = Gdk::PixbufLoader::create();
-    try {
-        loader->write(reinterpret_cast<const guint8*>(raw_svg.c_str()), raw_svg.size());
-        loader->close();
-        auto pixbuf = loader->get_pixbuf();
-        if (pixbuf) {
-            return Gtk::manage(new Gtk::Image(pixbuf));
-        }
-    } catch (...) {
-        std::cerr << "Failed to render SVG icon: " << name << std::endl;
-    }
-    return Gtk::manage(new Gtk::Image());
+    return Gtk::manage(new SvgIcon(it->second, size, color, dark_mode));
 }
 
 Gtk::Button* IconHelper::create_icon_button(const std::string& name, const std::string& text, int icon_size) {

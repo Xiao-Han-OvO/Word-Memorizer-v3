@@ -107,6 +107,24 @@ int main(int argc, char* argv[]) {
                 "Saved theme did not survive reload");
     });
 
+    tests.run("closing the settings title bar cancels draft preferences", [] {
+        TemporaryDirectory temporary;
+        const auto config = temporary.write("settings", "dark_mode=true\ncolor_theme=red\n");
+        const auto original = readFile(config);
+        SettingsManager manager(config);
+        Gtk::Window parent;
+        SettingsDialog dialog(parent, manager);
+        onlyWidget<Gtk::Switch>(dialog).set_active(false);
+        onlyWidget<Gtk::ComboBoxText>(dialog).set_active_id("green");
+        click(dialog, "重置默认");
+        Glib::signal_timeout().connect_once([&dialog]() { dialog.close(); }, 40);
+        const auto response = dialog.run();
+        require(response == Gtk::RESPONSE_DELETE_EVENT || response == Gtk::RESPONSE_CANCEL,
+                "Closing the title bar accepted settings");
+        require(manager.isDarkModeEnabled() && manager.getColorTheme() == "red" &&
+                readFile(config) == original, "Closing the title bar saved the draft");
+    });
+
     tests.run("saved dark mode and accent are applied when the window is created", [] {
         TemporaryDirectory temporary;
         const auto config = temporary.write("settings", "dark_mode=true\ncolor_theme=red\n");
@@ -117,8 +135,37 @@ int main(int argc, char* argv[]) {
         require(background.get_red() < 0.3 && background.get_green() < 0.3 &&
                 background.get_blue() < 0.3, "Saved dark background was not applied");
         const auto accent = statValue(window, "总单词").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
-        require(accent.get_red() > 0.75 && accent.get_green() < 0.4,
+        require(accent.get_red() > 0.75 && accent.get_red() > accent.get_green() + 0.25 &&
+                accent.get_red() > accent.get_blue() + 0.25,
                 "Saved red accent was replaced with the default theme");
+    });
+
+    tests.run("the word editor imports cards and cancels edits without changing display controls", [] {
+        TemporaryDirectory temporary;
+        const auto words = temporary.write("words.txt", "apple|n.|苹果|An apple.\n");
+        Gtk::Window parent;
+        WordManagerDialog dialog(parent);
+        dialog.loadWordsFromFile(words);
+        dialog.show_all();
+        require(button(dialog, "编辑").get_visible() &&
+                !button(dialog, "保存").get_visible() && !button(dialog, "取消").get_visible(),
+                "Display mode exposed editing controls");
+        click(dialog, "编辑");
+        const auto entries = widgets<Gtk::Entry>(dialog);
+        require(entries.size() == 4 && entries[0]->get_text() == "apple", "Imported card cannot be edited");
+        entries[0]->set_text("pear");
+        dialog.show_all();
+        require(!button(dialog, "编辑").get_visible() &&
+                button(dialog, "保存").get_visible() && button(dialog, "取消").get_visible(),
+                "Editing mode exposed display controls");
+        click(dialog, "取消");
+        dialog.show_all();
+        require(button(dialog, "编辑").get_visible() && !button(dialog, "保存").get_visible() &&
+                !button(dialog, "取消").get_visible(), "Cancel did not restore display controls");
+        click(dialog, "编辑");
+        require(widgets<Gtk::Entry>(dialog)[0]->get_text() == "apple", "Cancel retained the edited spelling");
+        click(dialog, "取消");
+        require(readFile(words) == "apple|n.|苹果|An apple.\n", "Editing wrote the vocabulary fixture");
     });
 
     tests.run("inactive and empty answers cannot create phantom wrong words", [] {

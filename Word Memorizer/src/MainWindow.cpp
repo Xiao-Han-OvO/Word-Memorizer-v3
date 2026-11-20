@@ -32,79 +32,13 @@ MainWindow::MainWindow(const std::string& settingsFile)
       learningPage(Gtk::ORIENTATION_VERTICAL),
       completionPage(Gtk::ORIENTATION_VERTICAL),
       placeholderPage(Gtk::ORIENTATION_VERTICAL),
-      dragging(false),
-      drag_x(0),
-      drag_y(0),
       attemptCount(0),
       wordBox(Gtk::ORIENTATION_VERTICAL),
       inputBox(Gtk::ORIENTATION_HORIZONTAL),
       controlBox(Gtk::ORIENTATION_HORIZONTAL) {
 
-    set_title("VocabMemster");
     set_default_size(900, 600);
-    set_decorated(false);
-    get_style_context()->add_class("light-glass");
-    IconHelper::set_dark_mode(settingsManager.isDarkModeEnabled());
-
-    // ========== 顶部全局标题栏 ==========
-    auto* titlebarEventBox = Gtk::manage(new Gtk::EventBox());
-    titlebarEventBox->set_hexpand(true);
-    titlebarEventBox->get_style_context()->add_class("custom-titlebar-drag-area");
-
-    auto* titlebarBox = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 0));
-    titlebarBox->set_border_width(4);
-    titlebarBox->get_style_context()->add_class("custom-titlebar");
-
-    auto* windowTitle = Gtk::manage(new Gtk::Label("VocabMemster"));
-    windowTitle->set_halign(Gtk::ALIGN_START);
-    windowTitle->set_hexpand(true);
-    windowTitle->get_style_context()->add_class("custom-titlebar-label");
-
-    auto* windowControls = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 2));
-    auto* minimizeBtn = Gtk::manage(new Gtk::Button("−"));
-    minimizeBtn->get_style_context()->add_class("custom-window-control");
-    minimizeBtn->set_tooltip_text("最小化");
-    auto* closeBtn = Gtk::manage(new Gtk::Button("×"));
-    closeBtn->get_style_context()->add_class("custom-window-control");
-    closeBtn->get_style_context()->add_class("close");
-    closeBtn->set_tooltip_text("关闭");
-
-    windowControls->pack_start(*minimizeBtn, Gtk::PACK_SHRINK);
-    windowControls->pack_start(*closeBtn, Gtk::PACK_SHRINK);
-    titlebarBox->pack_start(*windowTitle, Gtk::PACK_EXPAND_WIDGET);
-    titlebarBox->pack_end(*windowControls, Gtk::PACK_SHRINK);
-    titlebarEventBox->add(*titlebarBox);
-
-    // 拖动
-    titlebarEventBox->add_events(Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK | Gdk::POINTER_MOTION_MASK);
-    titlebarEventBox->signal_button_press_event().connect([this](GdkEventButton* event) {
-        if (event->button == GDK_BUTTON_PRIMARY) {
-            dragging = true;
-            int x, y;
-            get_position(x, y);
-            drag_x = event->x_root - x;
-            drag_y = event->y_root - y;
-            return true;
-        }
-        return false;
-    });
-    titlebarEventBox->signal_button_release_event().connect([this](GdkEventButton* event) {
-        if (event->button == GDK_BUTTON_PRIMARY) { dragging = false; return true; }
-        return false;
-    });
-    titlebarEventBox->signal_motion_notify_event().connect([this](GdkEventMotion* event) {
-        if (dragging) {
-            int new_x = event->x_root - drag_x;
-            int new_y = event->y_root - drag_y;
-            move(new_x, new_y);
-            return true;
-        }
-        return false;
-    });
-    minimizeBtn->signal_clicked().connect([this]() { iconify(); });
-    closeBtn->signal_clicked().connect([this]() { hide(); });
-
-    mainContainer.pack_start(*titlebarEventBox, Gtk::PACK_SHRINK);
+    GlassTheme::configure_window(*this, "VocabMemster", true);
 
     // ========== 左侧导航栏（始终可见，不随页面切换隐藏） ==========
     auto* navBar = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_VERTICAL));
@@ -145,6 +79,7 @@ MainWindow::MainWindow(const std::string& settingsFile)
     wordBox.get_style_context()->add_class("glass-card");
 
     posLabel.set_justify(Gtk::JUSTIFY_CENTER);
+    posLabel.get_style_context()->add_class("word-pos");
     posLabel.override_font(Pango::FontDescription("Sans Bold 14"));
     posLabel.set_margin_bottom(10);
     meaningLabel.set_justify(Gtk::JUSTIFY_CENTER);
@@ -330,6 +265,7 @@ void MainWindow::on_submit_answer() {
     if (answerLower == correctLower) {
         wordManager.addMasteredWord(currentWord.word);
         feedbackLabel.set_label("✓ 正确！答案: " + currentWord.word);
+        set_feedback_style("feedback-correct");
         answerEntry.set_sensitive(false);
         submitButton.set_sensitive(false);
         showAnswerButton.set_sensitive(false);
@@ -346,6 +282,7 @@ void MainWindow::on_submit_answer() {
         wordManager.addFailedWord(currentWord.word);
         attemptCount++;
         feedbackLabel.set_label("✗ 错误！请再试一次");
+        set_feedback_style("feedback-error");
         attemptLabel.set_label("尝试次数: " + std::to_string(attemptCount));
         answerEntry.set_text("");
         answerEntry.grab_focus();
@@ -357,6 +294,7 @@ void MainWindow::on_show_answer() {
     if (currentWord.word.empty() || is_word_completed() ||
         pageStack.get_visible_child_name() != "learning") return;
     feedbackLabel.set_label("正确答案: " + currentWord.word);
+    set_feedback_style("feedback-answer");
     answerEntry.set_sensitive(false);
     submitButton.set_sensitive(false);
     showAnswerButton.set_sensitive(false);
@@ -408,6 +346,7 @@ void MainWindow::on_review_wrong_words() {
         return;
     }
     Gtk::Dialog dialog("错词本", *this, true);
+    GlassTheme::configure_window(dialog, "错词本");
     dialog.set_default_size(600, 450);
     dialog.get_style_context()->add_class("dialog-box");
 
@@ -531,6 +470,7 @@ void MainWindow::update_display() {
         exampleLabel.set_label("例句: " + currentWord.example);
         sidePanel.set_current_word_status(wordManager.hasFailed(currentWord.word));
         feedbackLabel.set_label("");
+        set_feedback_style("");
         attemptLabel.set_label("");
         answerEntry.set_sensitive(true);
         submitButton.set_sensitive(true);
@@ -566,12 +506,30 @@ void MainWindow::apply_theme() {
     bool dark = settingsManager.isDarkModeEnabled();
     std::string accent = settingsManager.getPrimaryColor();
     GlassTheme::set_screen(get_screen());
-    IconHelper::set_dark_mode(dark);
     GlassTheme::apply_theme(dark, accent);
-    get_style_context()->remove_class("light-glass");
-    get_style_context()->remove_class("dark-glass");
-    get_style_context()->add_class(dark ? "dark-glass" : "light-glass");
+    IconHelper::set_dark_mode(dark);
     sidePanel.set_dark_mode_button(dark);
+    refresh_text_colors();
+}
+
+void MainWindow::set_feedback_style(const std::string& style) {
+    const auto context = feedbackLabel.get_style_context();
+    for (const auto* name : {"feedback-correct", "feedback-error", "feedback-answer"}) {
+        context->remove_class(name);
+    }
+    if (!style.empty()) context->add_class(style);
+    refresh_text_colors();
+}
+
+void MainWindow::refresh_text_colors() {
+    posLabel.override_color(GlassTheme::readable_color(settingsManager.getPosColor()));
+    const auto context = feedbackLabel.get_style_context();
+    std::string color;
+    if (context->has_class("feedback-correct")) color = settingsManager.getCorrectColor();
+    else if (context->has_class("feedback-error")) color = settingsManager.getErrorColor();
+    else if (context->has_class("feedback-answer")) color = settingsManager.getAnswerColor();
+    if (color.empty()) feedbackLabel.unset_color();
+    else feedbackLabel.override_color(GlassTheme::readable_color(color));
 }
 
 void MainWindow::toggle_dark_mode() {
@@ -580,11 +538,7 @@ void MainWindow::toggle_dark_mode() {
 }
 
 void MainWindow::apply_dialog_theme(Gtk::Window& dialog) {
-    bool dark = settingsManager.isDarkModeEnabled();
-    auto ctx = dialog.get_style_context();
-    ctx->remove_class("light-glass");
-    ctx->remove_class("dark-glass");
-    ctx->add_class(dark ? "dark-glass" : "light-glass");
+    GlassTheme::style_window(dialog);
 }
 
 bool MainWindow::on_key_press_event(GdkEventKey* event) {

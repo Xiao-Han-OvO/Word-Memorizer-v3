@@ -1,4 +1,5 @@
 #include "AboutDialog.h"
+#include "GlassTheme.h"
 #include <iostream>
 
 // 构造函数：初始化关于对话框
@@ -6,34 +7,10 @@ AboutDialog::AboutDialog(Gtk::Window& parent)
    : Dialog("关于", parent, true),
    mainBox(Gtk::ORIENTATION_VERTICAL) {
    
-	// 移除标题栏和边框
-	set_decorated(false);
+	GlassTheme::configure_window(*this, "关于");
 	set_default_size(400, 300);
-	set_border_width(20);
+	mainBox.set_border_width(20);
 	set_resizable(false);
-	
-	// 创建自定义标题栏
-	Gtk::Box* titlebarBox = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 0));
-	titlebarBox->set_border_width(8);
-	titlebarBox->set_halign(Gtk::ALIGN_FILL);
-	titlebarBox->set_hexpand(true);
-	titlebarBox->get_style_context()->add_class("custom-titlebar");
-	
-	// 窗口标题
-	Gtk::Label* dialogTitle = Gtk::manage(new Gtk::Label("关于"));
-	dialogTitle->set_halign(Gtk::ALIGN_START);
-	dialogTitle->set_hexpand(true);
-	dialogTitle->get_style_context()->add_class("custom-titlebar-label");
-	
-	// 关闭按钮
-	Gtk::Button* closeBtn = Gtk::manage(new Gtk::Button("×"));
-	closeBtn->get_style_context()->add_class("custom-window-control");
-	closeBtn->get_style_context()->add_class("close");
-	closeBtn->set_tooltip_text("关闭");
-	closeBtn->set_size_request(16, 16);
-	
-	titlebarBox->pack_start(*dialogTitle, Gtk::PACK_EXPAND_WIDGET);
-	titlebarBox->pack_end(*closeBtn, Gtk::PACK_SHRINK);
 	
 	// 设置标题
 	titleLabel.set_label("VocabMemorizer");
@@ -74,7 +51,6 @@ AboutDialog::AboutDialog(Gtk::Window& parent)
 	
 	// 布局
 	mainBox.set_spacing(5);
-	mainBox.pack_start(*titlebarBox, Gtk::PACK_SHRINK);  // 添加自定义标题栏
 	mainBox.pack_start(titleLabel, Gtk::PACK_SHRINK);
 	mainBox.pack_start(versionLabel, Gtk::PACK_SHRINK);
 	mainBox.pack_start(descriptionLabel, Gtk::PACK_SHRINK);
@@ -89,10 +65,6 @@ AboutDialog::AboutDialog(Gtk::Window& parent)
 	
 	// 连接信号
 	closeButton.signal_clicked().connect([this]() {
-		response(Gtk::RESPONSE_OK);
-	});
-	
-	closeBtn->signal_clicked().connect([this]() {
 		response(Gtk::RESPONSE_OK);
 	});
 	

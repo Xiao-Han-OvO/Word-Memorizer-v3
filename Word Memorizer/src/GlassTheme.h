@@ -17,6 +17,7 @@ public:
 private:
     static Glib::RefPtr<Gtk::CssProvider> css_provider;
     static Glib::RefPtr<Gdk::Screen> screen;
+    static sigc::connection compositor_connection;
     static std::string base_css;
     static std::string dark_css;
     static bool dark_mode;

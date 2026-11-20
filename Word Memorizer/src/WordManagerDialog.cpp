@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "GlassTheme.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -58,7 +59,7 @@ WordCard::WordCard(WordManagerDialog* parent,
 						const std::string& pos, 
 						const std::string& meaning, 
 						const std::string& example)
-	: parentDialog(parent), isEditing(false) {
+	: isEditing(false), parentDialog(parent) {
 	
 	set_shadow_type(Gtk::SHADOW_NONE);
 	set_border_width(15);
@@ -184,12 +185,15 @@ void WordCard::switchToEditMode() {
 	isEditing = true;
 	
 	// 移除显示组件，添加编辑组件
-	contentBox.remove(displayBox);
-	contentBox.pack_start(editBox, Gtk::PACK_SHRINK);
+	if (displayBox.get_parent() == &contentBox) contentBox.remove(displayBox);
+	if (editBox.get_parent() != &contentBox) contentBox.pack_start(editBox, Gtk::PACK_SHRINK);
 	
 	// 显示保存和取消按钮，隐藏编辑按钮
+	editButton.set_no_show_all(true);
 	editButton.hide();
+	saveButton.set_no_show_all(false);
 	saveButton.show();
+	cancelButton.set_no_show_all(false);
 	cancelButton.show();
 	
 	show_all_children();
@@ -205,12 +209,15 @@ void WordCard::switchToDisplayMode() {
 	exampleLabel.set_label("例句: " + exampleEntry.get_text());
 	
 	// 移除编辑组件，添加显示组件
-	contentBox.remove(editBox);
-	contentBox.pack_start(displayBox, Gtk::PACK_SHRINK);
+	if (editBox.get_parent() == &contentBox) contentBox.remove(editBox);
+	if (displayBox.get_parent() != &contentBox) contentBox.pack_start(displayBox, Gtk::PACK_SHRINK);
 	
 	// 显示编辑按钮，隐藏保存和取消按钮
+	editButton.set_no_show_all(false);
 	editButton.show();
+	saveButton.set_no_show_all(true);
 	saveButton.hide();
+	cancelButton.set_no_show_all(true);
 	cancelButton.hide();
 	
 	show_all_children();
@@ -271,32 +278,8 @@ WordManagerDialog::WordManagerDialog(Gtk::Window& parent)
 	mainBox(Gtk::ORIENTATION_VERTICAL),
 	wordsContainer(Gtk::ORIENTATION_VERTICAL) {
 	
-	// 移除标题栏和边框
-	set_decorated(false);
+	GlassTheme::configure_window(*this, "单词管理");
 	set_default_size(700, 550);
-	
-	// 创建自定义标题栏
-	Gtk::Box* titlebarBox = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL, 0));
-	titlebarBox->set_border_width(8);
-	titlebarBox->set_halign(Gtk::ALIGN_FILL);
-	titlebarBox->set_hexpand(true);
-	titlebarBox->get_style_context()->add_class("custom-titlebar");
-	
-	// 窗口标题
-	Gtk::Label* dialogTitle = Gtk::manage(new Gtk::Label("单词管理"));
-	dialogTitle->set_halign(Gtk::ALIGN_START);
-	dialogTitle->set_hexpand(true);
-	dialogTitle->get_style_context()->add_class("custom-titlebar-label");
-	
-	// 关闭按钮
-	Gtk::Button* closeBtn = Gtk::manage(new Gtk::Button("×"));
-	closeBtn->get_style_context()->add_class("custom-window-control");
-	closeBtn->get_style_context()->add_class("close");
-	closeBtn->set_tooltip_text("关闭");
-	closeBtn->set_size_request(16, 16);
-	
-	titlebarBox->pack_start(*dialogTitle, Gtk::PACK_EXPAND_WIDGET);
-	titlebarBox->pack_end(*closeBtn, Gtk::PACK_SHRINK);
 	
 	// 创建简约工具栏
 	Gtk::Box* toolbar = Gtk::manage(new Gtk::Box(Gtk::ORIENTATION_HORIZONTAL));
@@ -324,7 +307,6 @@ WordManagerDialog::WordManagerDialog(Gtk::Window& parent)
 	
 	// 主布局
 	mainBox.set_spacing(0);
-	mainBox.pack_start(*titlebarBox, Gtk::PACK_SHRINK);  // 添加自定义标题栏
 	mainBox.pack_start(*toolbar, Gtk::PACK_SHRINK);
 	mainBox.pack_start(scrolledWindow, Gtk::PACK_EXPAND_WIDGET);
 	
@@ -334,7 +316,6 @@ WordManagerDialog::WordManagerDialog(Gtk::Window& parent)
 	addButton->signal_clicked().connect(sigc::mem_fun(*this, &WordManagerDialog::on_add_button_clicked));
 	saveButton->signal_clicked().connect(sigc::mem_fun(*this, &WordManagerDialog::on_save_all_clicked));
 	closeButton->signal_clicked().connect(sigc::mem_fun(*this, &WordManagerDialog::on_close_clicked));
-	closeBtn->signal_clicked().connect(sigc::mem_fun(*this, &WordManagerDialog::on_close_clicked));
 	
 	show_all_children();
 }

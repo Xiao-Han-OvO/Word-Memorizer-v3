@@ -16,7 +16,7 @@ private:
     WordManager wordManager;
     SettingsManager settingsManager;
 
-    Gtk::Box mainContainer;       // 垂直容器：标题栏 + 内容区
+    Gtk::Box mainContainer;       // 窗口内容区
     Gtk::Box contentArea;         // 水平容器：导航 + 页面栈 + 侧栏
     Gtk::Box leftBox;             // 学习页内容
     SidePanel sidePanel;
@@ -25,9 +25,6 @@ private:
     Gtk::Box learningPage;
     Gtk::Box completionPage;
     Gtk::Box placeholderPage;
-
-    bool dragging;
-    int drag_x, drag_y;
 
     Word currentWord;
     int attemptCount;
@@ -85,6 +82,8 @@ private:
     void show_learning_page();
     void update_progress();
     void apply_theme();
+    void set_feedback_style(const std::string& style);
+    void refresh_text_colors();
     void toggle_dark_mode();
     void apply_dialog_theme(Gtk::Window& dialog);
     bool is_word_completed() const { return !answerEntry.get_sensitive(); }

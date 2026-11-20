@@ -10,7 +10,6 @@ private:
 	SettingsManager& settingsManager;
 	
 	Gtk::Box mainBox;
-	Gtk::Label titleLabel;
 	
 	// 主题设置
 	Gtk::Frame themeFrame;

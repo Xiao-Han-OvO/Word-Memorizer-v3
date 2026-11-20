@@ -11,6 +11,7 @@
 
 Glib::RefPtr<Gtk::CssProvider> GlassTheme::css_provider;
 Glib::RefPtr<Gdk::Screen> GlassTheme::screen;
+sigc::connection GlassTheme::compositor_connection;
 std::string GlassTheme::base_css;
 std::string GlassTheme::dark_css;
 bool GlassTheme::dark_mode = false;
@@ -96,7 +97,7 @@ Gdk::RGBA GlassTheme::readable_color(const std::string& requested) {
     Gdk::RGBA color;
     if (!color.set(requested)) color.set(dark_mode ? "#f1f5f9" : "#1a202c");
     color.set_alpha(1.0);
-    const Gdk::RGBA background(dark_mode ? "#252a34" : "#ffffff");
+    const Gdk::RGBA background(dark_mode ? "#303744" : "#edf1f7");
     if (contrast(color, background) >= 4.6) return color;
 
     const Gdk::RGBA target(dark_mode ? "#ffffff" : "#000000");
@@ -144,7 +145,13 @@ void GlassTheme::apply_theme(bool dark, const std::string& accent_color) {
 void GlassTheme::set_screen(const Glib::RefPtr<Gdk::Screen>& new_screen) {
     if (screen == new_screen) return;
     if (screen && css_provider) Gtk::StyleContext::remove_provider_for_screen(screen, css_provider);
+    compositor_connection.disconnect();
     screen = new_screen;
+    if (screen) {
+        compositor_connection = screen->signal_composited_changed().connect([]() {
+            for (auto* window : Gtk::Window::list_toplevels()) style_window(*window);
+        });
+    }
     if (screen && css_provider) {
         Gtk::StyleContext::add_provider_for_screen(screen, css_provider,
             GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
@@ -157,6 +164,12 @@ void GlassTheme::style_window(Gtk::Window& window) {
     context->remove_class("light-glass");
     context->remove_class("dark-glass");
     context->add_class(dark_mode ? "dark-glass" : "light-glass");
+    const auto window_screen = window.get_screen();
+    if (window_screen && !window_screen->is_composited()) context->add_class("uncomposited");
+    else context->remove_class("uncomposited");
+    if (auto* header = dynamic_cast<Gtk::HeaderBar*>(window.get_titlebar())) {
+        header->get_style_context()->add_class("custom-titlebar");
+    }
 }
 
 void GlassTheme::configure_window(Gtk::Window& window, const Glib::ustring& title, bool main_window) {
@@ -169,6 +182,7 @@ void GlassTheme::configure_window(Gtk::Window& window, const Glib::ustring& titl
     window.set_title(title);
     window.set_decorated(true);
     window.set_titlebar(*header);
+    header->show();
     style_window(window);
 }
 

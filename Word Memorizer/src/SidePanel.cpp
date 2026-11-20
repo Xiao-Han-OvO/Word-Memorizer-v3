@@ -77,6 +77,7 @@ SidePanel::SidePanel(WordManager& wm, SettingsManager& sm)
     pack_start(*separator, Gtk::PACK_SHRINK);
     
     currentStatusLabel.set_line_wrap(true);
+    currentStatusLabel.get_style_context()->add_class("status-warning");
     currentStatusLabel.set_margin_bottom(16);
     currentStatusLabel.set_halign(Gtk::ALIGN_START);
     pack_start(currentStatusLabel, Gtk::PACK_SHRINK);
@@ -135,7 +136,6 @@ void SidePanel::update_progress() {
 void SidePanel::set_current_word_status(bool has_failed) {
     if (has_failed) {
         currentStatusLabel.set_label("这个单词你曾经拼错过");
-        currentStatusLabel.override_color(Gdk::RGBA("#e67e22"));
     } else {
         currentStatusLabel.set_label("");
     }

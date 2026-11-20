@@ -38,7 +38,6 @@ public:
 private:
     static std::unordered_map<std::string, std::string> svg_map;
     static bool dark_mode;
-    static std::string wrap_svg(const std::string& path, int size, const std::string& color);
 };
 
 #endif

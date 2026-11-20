@@ -43,6 +43,20 @@ Gtk::Button& namedButton(Gtk::Widget& root, const std::string& label) {
     throw std::runtime_error("Missing button: " + label);
 }
 
+Gtk::Button& tooltipButton(Gtk::Widget& root, const std::string& tooltip) {
+    for (auto* button : all<Gtk::Button>(root)) {
+        if (button->get_tooltip_text() == tooltip) return *button;
+    }
+    throw std::runtime_error("Missing button tooltip: " + tooltip);
+}
+
+Gtk::Label& styledLabel(Gtk::Widget& root, const std::string& style) {
+    for (auto* label : all<Gtk::Label>(root)) {
+        if (label->get_style_context()->has_class(style)) return *label;
+    }
+    throw std::runtime_error("Missing styled label: " + style);
+}
+
 double luminance(const Gdk::RGBA& color) {
     const auto linear = [](double value) {
         return value <= 0.04045 ? value / 12.92 : std::pow((value + 0.055) / 1.055, 2.4);
@@ -58,7 +72,7 @@ double contrast(const Gdk::RGBA& first, const Gdk::RGBA& second) {
 
 double iconBrightness(const Glib::RefPtr<Gdk::Pixbuf>& pixbuf) {
     require(static_cast<bool>(pixbuf), "Icon has no rendered pixels");
-    const auto* pixels = pixbuf->get_pixels();
+    const auto* pixels = gdk_pixbuf_read_pixels(pixbuf->gobj());
     const int channels = pixbuf->get_n_channels();
     double brightness = 0.0, weight = 0.0;
     for (int y = 0; y < pixbuf->get_height(); ++y) {
@@ -74,14 +88,17 @@ double iconBrightness(const Glib::RefPtr<Gdk::Pixbuf>& pixbuf) {
 }
 
 void screenshot(Gtk::Window& window, const std::string& name) {
+    std::cout << "CAPTURE: " << name << std::endl;
     window.show();
     settle();
-    const auto surface = window.get_window();
-    require(static_cast<bool>(surface), "Window could not be rendered");
-    auto pixels = Gdk::Pixbuf::create(surface, 0, 0, surface->get_width(), surface->get_height());
-    require(static_cast<bool>(pixels), "Window capture failed");
+    require(static_cast<bool>(window.get_window()), "Window could not be rendered");
+    // GTK 直接绘制到新图像，避免读取 X11 窗口像素时触发系统 Cairo 的 MIME 缓存断言。
+    const auto surface = Cairo::ImageSurface::create(Cairo::FORMAT_ARGB32,
+        window.get_allocated_width(), window.get_allocated_height());
+    const auto context = Cairo::Context::create(surface);
+    gtk_widget_draw(GTK_WIDGET(window.gobj()), context->cobj());
     require(g_mkdir_with_parents("style-previews", 0700) == 0, "Cannot create preview directory");
-    pixels->save("style-previews/" + name + ".png", "png");
+    surface->write_to_png("style-previews/" + name + ".png");
 }
 
 int main() {
@@ -108,6 +125,7 @@ int main() {
         settle();
         Gtk::Image* icon = nullptr;
         for (auto* candidate : all<Gtk::Image>(window)) {
+            if (candidate->get_storage_type() != Gtk::IMAGE_PIXBUF) continue;
             const auto pixels = candidate->get_pixbuf();
             if (pixels && pixels->get_width() == 20) { icon = candidate; break; }
         }
@@ -140,6 +158,15 @@ int main() {
             require(contrast(context->get_color(Gtk::STATE_FLAG_NORMAL),
                              context->get_background_color(Gtk::STATE_FLAG_NORMAL)) >= 4.5,
                     "Yellow buttons have insufficient text contrast");
+            auto& settingsButton = tooltipButton(window, "设置");
+            auto* image = dynamic_cast<Gtk::Image*>(settingsButton.get_image());
+            require(image && image->get_storage_type() == Gtk::IMAGE_PIXBUF,
+                    "Primary button icon is missing");
+            const auto foreground = settingsButton.get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            const double expected = 255 * (foreground.get_red() + foreground.get_green() +
+                                           foreground.get_blue()) / 3;
+            require(std::fabs(iconBrightness(image->get_pixbuf()) - expected) < 5,
+                    "Primary button icon does not follow its readable text color");
         }
     });
 
@@ -155,13 +182,37 @@ int main() {
         require(!header->get_has_subtitle(), "Empty subtitle adds unused title-bar space");
     });
 
+    tests.run("uncomposited desktops keep window decorations compact", [] {
+        TemporaryDirectory temporary;
+        const auto config = temporary.write("settings", "dark_mode=false\ncolor_theme=blue\n");
+        MainWindow window(config);
+        window.show();
+        settle();
+        if (!window.get_screen()->is_composited()) {
+            SettingsManager settings(config);
+            SettingsDialog preferences(window, settings);
+            AboutDialog about(window);
+            UsageDialog help(window);
+            WordManagerDialog editor(window);
+            for (auto* candidate : std::vector<Gtk::Window*>{&window, &preferences, &about, &help, &editor}) {
+                candidate->show();
+                settle();
+                const auto surface = candidate->get_window();
+                auto* header = candidate->get_titlebar();
+                require(surface && header && surface->get_width() <= header->get_allocated_width() + 16,
+                        "An unpainted shadow adds excessive window padding to " + candidate->get_title().raw());
+            }
+        }
+    });
+
     tests.run("settings controls follow the dialog's dark theme", [] {
         TemporaryDirectory temporary;
         const auto config = temporary.write("settings", "dark_mode=true\ncolor_theme=blue\n");
         MainWindow window(config);
         SettingsManager settings(config);
         SettingsDialog dialog(window, settings);
-        dialog.get_style_context()->add_class("dark-glass");
+        require(dialog.get_style_context()->has_class("dark-glass"),
+                "Settings dialog did not inherit the active dark theme");
         window.show();
         dialog.show();
         settle();
@@ -170,6 +221,137 @@ int main() {
         require(luminance(background) < 0.15, "Dialog button retained a bright native background");
         require(contrast(context->get_color(Gtk::STATE_FLAG_NORMAL), background) >= 4.5,
                 "Dialog button text is unreadable");
+    });
+
+    tests.run("all custom dialogs inherit the theme and native title bars", [] {
+        TemporaryDirectory temporary;
+        const auto config = temporary.write("settings", "dark_mode=true\ncolor_theme=blue\n");
+        MainWindow window(config);
+        SettingsManager settings(config);
+        SettingsDialog preferences(window, settings);
+        AboutDialog about(window);
+        UsageDialog help(window);
+        WordManagerDialog editor(window);
+        for (auto* dialog : std::vector<Gtk::Window*>{&preferences, &about, &help, &editor}) {
+            auto* header = dynamic_cast<Gtk::HeaderBar*>(dialog->get_titlebar());
+            require(dialog->get_decorated() && header && header->get_show_close_button(),
+                    "A custom dialog is missing its native title bar");
+            require(header->get_decoration_layout() == ":close" &&
+                    dialog->get_style_context()->has_class("dark-glass"),
+                    "A dialog retained the old decorations or light theme");
+        }
+    });
+
+    tests.run("custom learning colors and warning text remain readable when themes change", [] {
+        TemporaryDirectory temporary;
+        const auto words = temporary.write("words.txt", "apple|n.|苹果|An apple.\n");
+        const auto config = temporary.write("settings",
+            "dark_mode=false\ncolor_theme=red\npos_color=#ff8800\n"
+            "correct_color=#0000ff\nerror_color=#ffff00\nanswer_color=#ff00ff\n");
+        MainWindow window(config);
+        window.show();
+        for (int mode = 0; mode < 2; ++mode) {
+            require(window.loadWordsFromFile(words), "Learning color fixture was rejected");
+            auto& entry = *all<Gtk::Entry>(window).front();
+            entry.set_text("wrong");
+            gtk_button_clicked(namedButton(window, "提交").gobj());
+            settle();
+            const auto background = window.get_style_context()->get_background_color(Gtk::STATE_FLAG_NORMAL);
+            const auto error = styledLabel(window, "feedback-label").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            require(std::fabs(error.get_red() - error.get_green()) < 0.03 &&
+                    error.get_red() > error.get_blue() + 0.2 && contrast(error, background) >= 4.5,
+                    "Custom error color was lost or became unreadable");
+            gtk_button_clicked(namedButton(window, "下一个单词").gobj());
+            settle();
+            require(!styledLabel(window, "status-warning").get_text().empty(),
+                    "Previously failed word has no warning text");
+            const auto warning = styledLabel(window, "status-warning").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            require(contrast(warning, background) >= 4.5, "Wrong-word warning became unreadable");
+            auto& pos = styledLabel(window, "word-pos");
+            const auto posColor = pos.get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            const auto card = pos.get_parent()->get_style_context()->get_background_color(Gtk::STATE_FLAG_NORMAL);
+            require(posColor.get_red() > posColor.get_blue() + 0.2 && contrast(posColor, card) >= 4.5,
+                    "Custom part-of-speech color was lost or became unreadable");
+            const auto accent = styledLabel(window, "stat-value").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            const auto statCard = styledLabel(window, "stat-value").get_parent()->get_style_context()->get_background_color(Gtk::STATE_FLAG_NORMAL);
+            require(contrast(accent, statCard) >= 4.5, "Saved accent is unreadable on a statistic card");
+
+            entry.set_text("apple");
+            gtk_button_clicked(namedButton(window, "提交").gobj());
+            settle();
+            const auto correct = styledLabel(window, "feedback-label").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            require(correct.get_blue() > correct.get_green() + 0.2 && contrast(correct, background) >= 4.5,
+                    "Custom correct-answer color was lost or became unreadable");
+            require(window.loadWordsFromFile(words), "Answer color fixture was rejected");
+            gtk_button_clicked(namedButton(window, "查看答案").gobj());
+            settle();
+            const auto answer = styledLabel(window, "feedback-label").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+            require(answer.get_red() > answer.get_green() + 0.2 &&
+                    answer.get_blue() > answer.get_green() + 0.2 && contrast(answer, background) >= 4.5,
+                    "Custom revealed-answer color was lost or became unreadable");
+            if (mode == 0) {
+                gtk_button_clicked(tooltipButton(window, "切换深色模式").gobj());
+                settle();
+                const auto live = styledLabel(window, "feedback-label").get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL);
+                const auto darkBackground = window.get_style_context()->get_background_color(Gtk::STATE_FLAG_NORMAL);
+                require(live.get_red() > live.get_green() + 0.2 &&
+                        live.get_blue() > live.get_green() + 0.2 && contrast(live, darkBackground) >= 4.5,
+                        "Visible feedback did not recolor during a live theme change");
+            }
+        }
+    });
+
+    tests.run("help markup follows the readable theme colors", [] {
+        TemporaryDirectory temporary;
+        const auto config = temporary.write("settings", "dark_mode=true\ncolor_theme=blue\n");
+        MainWindow window(config);
+        UsageDialog help(window);
+        help.show();
+        settle();
+        Gtk::Label* content = nullptr;
+        for (auto* label : all<Gtk::Label>(help)) {
+            if (label->get_text().find("单词记忆大师使用指南") != Glib::ustring::npos) content = label;
+        }
+        require(content != nullptr, "Help content is missing");
+        const auto background = help.get_style_context()->get_background_color(Gtk::STATE_FLAG_NORMAL);
+        require(contrast(content->get_style_context()->get_color(Gtk::STATE_FLAG_NORMAL), background) >= 4.5,
+                "Help body text is unreadable");
+        auto* attributes = pango_layout_get_attributes(content->get_layout()->gobj());
+        if (attributes) {
+            auto* iterator = pango_attr_list_get_iterator(attributes);
+            bool readable = true;
+            do {
+                auto* attribute = pango_attr_iterator_get(iterator, PANGO_ATTR_FOREGROUND);
+                if (!attribute) continue;
+                const auto& color = reinterpret_cast<PangoAttrColor*>(attribute)->color;
+                Gdk::RGBA foreground;
+                foreground.set_rgba(color.red / 65535.0, color.green / 65535.0, color.blue / 65535.0, 1.0);
+                readable = readable && contrast(foreground, background) >= 4.5;
+            } while (pango_attr_iterator_next(iterator));
+            pango_attr_iterator_destroy(iterator);
+            require(readable, "Help markup retained an unreadable hardcoded color");
+        }
+    });
+
+    tests.run("packaged and built-in palettes render consistently", [] {
+        TemporaryDirectory temporary;
+        std::vector<Gdk::RGBA> backgrounds;
+        for (bool builtin : {false, true}) {
+            GlassTheme::init(builtin);
+            const auto config = temporary.write(builtin ? "builtin-settings" : "packaged-settings",
+                "dark_mode=true\ncolor_theme=yellow\n");
+            MainWindow window(config);
+            backgrounds.push_back(window.get_style_context()->get_background_color(Gtk::STATE_FLAG_NORMAL));
+            const auto context = namedButton(window, "提交").get_style_context();
+            require(contrast(context->get_color(Gtk::STATE_FLAG_NORMAL),
+                             context->get_background_color(Gtk::STATE_FLAG_NORMAL)) >= 4.5,
+                    "Built-in primary button colors are unreadable");
+        }
+        require(std::fabs(backgrounds[0].get_red() - backgrounds[1].get_red()) < 0.001 &&
+                std::fabs(backgrounds[0].get_green() - backgrounds[1].get_green()) < 0.001 &&
+                std::fabs(backgrounds[0].get_blue() - backgrounds[1].get_blue()) < 0.001,
+                "Built-in background differs from the packaged theme");
+        GlassTheme::init();
     });
 
     tests.run("light and dark pages and dialogs render for visual review", [] {
@@ -186,19 +368,29 @@ int main() {
             SettingsManager settings(config);
             {
                 SettingsDialog dialog(window, settings);
-                dialog.get_style_context()->add_class(dark ? "dark-glass" : "light-glass");
                 screenshot(dialog, mode + "-settings");
             }
             {
                 AboutDialog dialog(window);
-                dialog.get_style_context()->add_class(dark ? "dark-glass" : "light-glass");
                 screenshot(dialog, mode + "-about");
             }
             {
                 UsageDialog dialog(window);
-                dialog.get_style_context()->add_class(dark ? "dark-glass" : "light-glass");
                 screenshot(dialog, mode + "-help");
             }
+            {
+                WordManagerDialog dialog(window);
+                dialog.loadWordsFromFile(words);
+                screenshot(dialog, mode + "-editor");
+            }
+            auto& entry = *all<Gtk::Entry>(window).front();
+            entry.set_text("wrong");
+            gtk_button_clicked(namedButton(window, "提交").gobj());
+            screenshot(window, mode + "-error");
+            entry.set_text("apple");
+            gtk_button_clicked(namedButton(window, "提交").gobj());
+            settle(1100);
+            screenshot(window, mode + "-completion");
         }
     });
 
