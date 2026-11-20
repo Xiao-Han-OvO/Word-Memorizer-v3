@@ -19,6 +19,7 @@
 
 # Compiled Dynamic libraries
 *.so
+*.so.*
 *.dylib
 *.dll
 
@@ -40,6 +41,27 @@
 # debug information files
 *.dwo
 
-# CMake build directories
+# CMake build directories and generated files
+/build/
+/build-*/
+/cmake-build-*/
 /Word Memorizer/build/
-/Word Memorizer/build-local/
+/Word Memorizer/build-*/
+/Word Memorizer/cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+compile_commands.json
+CMakeUserPresets.json
+Testing/
+
+# Generated GUI regression screenshots
+style-previews/
+
+# Local editor files
+.cache/clangd/
+*.swp
+*.swo
+*~
