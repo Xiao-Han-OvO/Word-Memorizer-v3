@@ -1,0 +1,9 @@
+#ifndef THEMERESOURCES_H
+#define THEMERESOURCES_H
+
+namespace ThemeResources {
+static const char base_css[] = R"WM_CSS(@WORD_MEMORIZER_BASE_CSS@)WM_CSS";
+static const char dark_css[] = R"WM_CSS(@WORD_MEMORIZER_DARK_CSS@)WM_CSS";
+}
+
+#endif

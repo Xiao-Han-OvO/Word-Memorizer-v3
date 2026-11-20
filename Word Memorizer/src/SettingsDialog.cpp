@@ -160,10 +160,6 @@ SettingsDialog::SettingsDialog(Gtk::Window& parent, SettingsManager& settings)
 	saveButton.signal_clicked().connect(sigc::mem_fun(*this, &SettingsDialog::on_save_clicked));
 	cancelButton.signal_clicked().connect(sigc::mem_fun(*this, &SettingsDialog::on_cancel_clicked));
 	resetButton.signal_clicked().connect(sigc::mem_fun(*this, &SettingsDialog::on_reset_clicked));
-	darkModeSwitch.property_active().signal_changed().connect(
-		sigc::mem_fun(*this, &SettingsDialog::on_dark_mode_toggled));
-	colorThemeCombo.signal_changed().connect(
-		sigc::mem_fun(*this, &SettingsDialog::on_color_theme_changed));
 	
 	// 加载当前设置
 	load_current_colors();
@@ -248,20 +244,5 @@ void SettingsDialog::on_reset_clicked() {
 	colorThemeCombo.set_active_id("blue");
 	
 	// 重置深色模式为系统检测
-	settingsManager.setDarkModeEnabled(settingsManager.detectSystemDarkMode());
-	darkModeSwitch.set_active(settingsManager.isDarkModeEnabled());
-}
-
-// 深色模式切换事件
-void SettingsDialog::on_dark_mode_toggled() {
-	// 实时切换深色模式预览
-	settingsManager.setDarkModeEnabled(darkModeSwitch.get_active());
-}
-
-// 颜色主题改变事件
-void SettingsDialog::on_color_theme_changed() {
-	// 实时切换颜色主题预览
-	if (colorThemeCombo.get_active_id() != "") {
-		settingsManager.setColorTheme(colorThemeCombo.get_active_id());
-	}
+	darkModeSwitch.set_active(settingsManager.detectSystemDarkMode());
 }

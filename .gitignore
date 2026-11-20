@@ -39,3 +39,7 @@
 
 # debug information files
 *.dwo
+
+# CMake build directories
+/Word Memorizer/build/
+/Word Memorizer/build-local/

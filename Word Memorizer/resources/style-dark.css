@@ -1,0 +1,21 @@
+/* 所有页面、原生控件和弹出窗口共用此深色色板。 */
+@define-color wm_window_bg #1a1d23;
+@define-color wm_titlebar_bg #20242c;
+@define-color wm_surface #252a34;
+@define-color wm_panel #2d333f;
+@define-color wm_input_bg #20252e;
+@define-color wm_button_bg #303744;
+@define-color wm_control_hover #3d4656;
+@define-color wm_control_active #485368;
+@define-color wm_disabled_bg #292f3a;
+@define-color wm_text #f1f5f9;
+@define-color wm_muted #b4bfce;
+@define-color wm_border #3d4553;
+@define-color wm_scrollbar #5a667b;
+@define-color wm_success #75df9d;
+@define-color wm_error #ff8899;
+@define-color wm_warning #f6c66a;
+
+.dark-glass .glass-card, .dark-glass .card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+}

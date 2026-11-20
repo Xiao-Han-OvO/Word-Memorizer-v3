@@ -21,7 +21,7 @@ private:
 	std::string colorTheme;
 
 public:
-	SettingsManager();
+	explicit SettingsManager(const std::string& filename = "");
 	void loadSettings();
 	void saveSettings();
 	std::string getSetting(const std::string& key, const std::string& defaultValue = "");

@@ -58,8 +58,6 @@ private:
 	void on_save_clicked();
 	void on_cancel_clicked();
 	void on_reset_clicked();
-	void on_dark_mode_toggled();
-	void on_color_theme_changed();
 	void load_current_colors();
 	void load_current_theme();
 };

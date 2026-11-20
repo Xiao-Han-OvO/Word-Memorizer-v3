@@ -3,13 +3,17 @@
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
+#include <cctype>
 #include <gtkmm.h>
 
 // 构造函数：初始化配置
-SettingsManager::SettingsManager() {
+SettingsManager::SettingsManager(const std::string& filename)
+	: darkModeEnabled(false), colorTheme("blue") {
 	// 确定配置文件路径
 	const char* homeDir = std::getenv("HOME");
-	if (homeDir) {
+	if (!filename.empty()) {
+		configFile = filename;
+	} else if (homeDir) {
 		configFile = std::string(homeDir) + "/.word_memorizer";
 	} else {
 		configFile = ".word_memorizer";
@@ -59,7 +63,7 @@ bool SettingsManager::detectSystemDarkMode() {
 	if (gtk_theme) {
 		std::string theme = gtk_theme;
 		for (char &c : theme) {
-			c = std::tolower(c);
+			c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 		}
 		if (theme.find("dark") != std::string::npos) {
 			return true;
@@ -74,7 +78,7 @@ bool SettingsManager::detectSystemDarkMode() {
 		
 		std::string theme_lower = theme_name;
 		for (char &c : theme_lower) {
-			c = std::tolower(c);
+			c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 		}
 		if (theme_lower.find("dark") != std::string::npos) {
 			return true;
@@ -91,11 +95,11 @@ void SettingsManager::loadSettings() {
 	std::ifstream file(configFile);
 	if (!file.is_open()) {
 		// 如果文件不存在，使用默认设置
-		setPosColor(DEFAULT_POS_COLOR);
-		setCorrectColor(DEFAULT_CORRECT_COLOR);
-		setErrorColor(DEFAULT_ERROR_COLOR);
-		setAnswerColor(DEFAULT_ANSWER_COLOR);
-		setColorTheme("blue");
+		settings["pos_color"] = DEFAULT_POS_COLOR;
+		settings["correct_color"] = DEFAULT_CORRECT_COLOR;
+		settings["error_color"] = DEFAULT_ERROR_COLOR;
+		settings["answer_color"] = DEFAULT_ANSWER_COLOR;
+		settings["color_theme"] = "blue";
 		return;
 	}
 	

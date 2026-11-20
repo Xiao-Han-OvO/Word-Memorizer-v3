@@ -1,0 +1,411 @@
+/* 浅色基础色板；深色主题仅覆盖色板，所有控件共用下面的样式。 */
+@define-color wm_window_bg #f5f7fa;
+@define-color wm_titlebar_bg #eef2f7;
+@define-color wm_surface rgba(255, 255, 255, 0.94);
+@define-color wm_panel #edf1f7;
+@define-color wm_input_bg #ffffff;
+@define-color wm_button_bg #f7f9fc;
+@define-color wm_control_hover #e4eaf2;
+@define-color wm_control_active #d6deea;
+@define-color wm_disabled_bg #e8edf4;
+@define-color wm_text #1a202c;
+@define-color wm_muted #536176;
+@define-color wm_border #dbe2ec;
+@define-color wm_scrollbar #9aa8bc;
+@define-color wm_success #18733c;
+@define-color wm_error #be243b;
+@define-color wm_warning #8a5400;
+
+* {
+  font-family: Sans;
+}
+
+window, .background {
+  background-color: @wm_window_bg;
+  color: @wm_text;
+}
+
+label, image, box, grid {
+  color: inherit;
+}
+
+viewport, scrolledwindow {
+  background-color: transparent;
+  color: @wm_text;
+}
+
+/* 原生客户端标题栏：固定控件尺寸，内容与窗口边缘对齐。 */
+headerbar.custom-titlebar {
+  background-color: @wm_titlebar_bg;
+  background-image: none;
+  color: @wm_text;
+  border: none;
+  border-bottom: 1px solid @wm_border;
+  border-radius: 14px 14px 0 0;
+  box-shadow: none;
+  padding: 6px 12px;
+  margin: 0;
+  min-height: 40px;
+}
+
+headerbar.custom-titlebar .title {
+  color: @wm_text;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+headerbar.custom-titlebar:backdrop .title {
+  color: @wm_muted;
+}
+
+headerbar.custom-titlebar button.titlebutton {
+  background: transparent;
+  color: @wm_text;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  box-shadow: none;
+  -gtk-icon-shadow: none;
+  padding: 0;
+  margin: 0 2px;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+headerbar.custom-titlebar button.titlebutton:hover {
+  background-color: @wm_control_hover;
+}
+
+headerbar.custom-titlebar button.titlebutton:active {
+  background-color: @wm_control_active;
+}
+
+headerbar.custom-titlebar button.titlebutton.close:hover {
+  background-color: #d82945;
+  color: #ffffff;
+}
+
+headerbar.custom-titlebar button.titlebutton.close:active {
+  background-color: #b82039;
+  color: #ffffff;
+}
+
+window.maximized headerbar.custom-titlebar,
+window.fullscreen headerbar.custom-titlebar {
+  border-radius: 0;
+}
+
+decoration {
+  border: 1px solid @wm_border;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+window.maximized decoration, window.fullscreen decoration {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* 原生对话框、编辑器和弹出菜单也使用应用色板。 */
+button {
+  background-color: @wm_button_bg;
+  background-image: none;
+  color: @wm_text;
+  border: 1px solid @wm_border;
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 8px 12px;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+button label, button image {
+  color: inherit;
+}
+
+button:hover {
+  background-color: @wm_control_hover;
+}
+
+button:active, button:checked {
+  background-color: @wm_control_active;
+}
+
+button:focus {
+  outline: 2px solid alpha(@wm_accent, 0.55);
+  outline-offset: -2px;
+}
+
+button:disabled {
+  background-color: @wm_disabled_bg;
+  color: @wm_muted;
+  opacity: 1;
+}
+
+entry {
+  background-color: @wm_input_bg;
+  background-image: none;
+  color: @wm_text;
+  caret-color: @wm_text;
+  border: 1px solid @wm_border;
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 8px 12px;
+}
+
+entry:focus {
+  border-color: @wm_accent;
+  box-shadow: 0 0 0 2px alpha(@wm_accent, 0.18);
+}
+
+entry:disabled {
+  background-color: @wm_disabled_bg;
+  color: @wm_muted;
+  opacity: 1;
+}
+
+selection {
+  background-color: @wm_accent;
+  color: @wm_accent_text;
+}
+
+frame > border {
+  border-color: @wm_border;
+  border-radius: 12px;
+}
+
+.view, treeview, textview, textview text, list {
+  background-color: @wm_input_bg;
+  color: @wm_text;
+}
+
+.view:selected, treeview:selected, row:selected {
+  background-color: @wm_accent;
+  color: @wm_accent_text;
+}
+
+row:selected label {
+  color: @wm_accent_text;
+}
+
+switch {
+  background-color: @wm_control_active;
+  background-image: none;
+  border: 1px solid @wm_border;
+  border-radius: 16px;
+}
+
+switch:checked {
+  background-color: @wm_accent;
+}
+
+switch slider {
+  background-color: @wm_input_bg;
+  background-image: none;
+  border: 1px solid @wm_border;
+  border-radius: 14px;
+}
+
+checkbutton check, radiobutton radio {
+  background-color: @wm_input_bg;
+  border-color: @wm_border;
+  color: @wm_text;
+}
+
+checkbutton check:checked, radiobutton radio:checked {
+  background-color: @wm_accent;
+  color: @wm_accent_text;
+}
+
+scrollbar {
+  background-color: transparent;
+}
+
+scrollbar slider {
+  background-color: @wm_scrollbar;
+  border: none;
+  border-radius: 8px;
+  min-width: 6px;
+  min-height: 6px;
+}
+
+scrollbar slider:hover {
+  background-color: @wm_muted;
+}
+
+menu, popover, tooltip {
+  background-color: @wm_input_bg;
+  color: @wm_text;
+  border: 1px solid @wm_border;
+  border-radius: 10px;
+}
+
+menuitem:hover {
+  background-color: @wm_control_hover;
+  color: @wm_text;
+}
+
+tooltip label {
+  color: @wm_text;
+}
+
+/* 学习页面与统计面板 */
+.glass-card, .card {
+  background-color: @wm_surface;
+  border: 1px solid @wm_border;
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  padding: 20px;
+  margin: 16px;
+}
+
+.side-panel {
+  background-color: @wm_surface;
+  border: 1px solid @wm_border;
+  border-radius: 18px;
+  padding: 16px 12px;
+  margin: 12px 12px 12px 8px;
+}
+
+.stat-card {
+  background-color: @wm_panel;
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: bold;
+  color: @wm_accent_fg;
+}
+
+.stat-label, .muted, .subtitle, .placeholder-text {
+  color: @wm_muted;
+}
+
+.stat-label {
+  font-size: 12px;
+}
+
+.status-warning {
+  color: @wm_warning;
+}
+
+.glass-entry {
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.glass-btn, .primary {
+  background-color: @wm_accent;
+  color: @wm_accent_text;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.glass-btn:hover, .primary:hover {
+  background-color: @wm_accent_hover;
+}
+
+.glass-btn:active, .primary:active {
+  background-color: @wm_accent_active;
+}
+
+.glass-btn-secondary {
+  background-color: @wm_button_bg;
+  color: @wm_accent_fg;
+  border: 1px solid @wm_border;
+  border-radius: 12px;
+}
+
+.glass-btn-secondary:hover {
+  background-color: @wm_control_hover;
+}
+
+.glass-btn:disabled, .primary:disabled, .glass-btn-secondary:disabled {
+  background-color: @wm_disabled_bg;
+  color: @wm_muted;
+  border-color: @wm_border;
+}
+
+.glass-progress {
+  color: @wm_text;
+  font-size: 11px;
+}
+
+.glass-progress trough {
+  background-color: @wm_panel;
+  border: 1px solid @wm_border;
+  border-radius: 8px;
+  min-height: 8px;
+}
+
+.glass-progress progress {
+  background-color: @wm_accent;
+  border-radius: 8px;
+}
+
+.feedback-label {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 8px 0;
+}
+
+.feedback-correct {
+  color: @wm_success;
+}
+
+.feedback-error {
+  color: @wm_error;
+}
+
+.feedback-answer, .word-pos {
+  color: @wm_accent_fg;
+}
+
+.placeholder-page {
+  background-color: @wm_surface;
+  border: 1px solid @wm_border;
+  border-radius: 18px;
+  padding: 28px;
+  margin: 24px;
+}
+
+.placeholder-icon {
+  color: @wm_accent_fg;
+  margin-bottom: 16px;
+}
+
+.side-navbar {
+  background-color: @wm_panel;
+  border-right: 1px solid @wm_border;
+  padding: 10px 0;
+}
+
+.nav-button {
+  background-color: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 4px;
+  margin: 2px 8px;
+}
+
+.nav-button:hover {
+  background-color: @wm_control_hover;
+}
+
+.nav-button-label {
+  color: inherit;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.dialog-box {
+  background-color: @wm_window_bg;
+  color: @wm_text;
+}
+
+.title {
+  color: @wm_text;
+  font-weight: bold;
+}
